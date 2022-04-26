@@ -1,10 +1,23 @@
 # Scottish Walks Database
 
-## Install instructions
-`jupyter nbextension enable --py --sys-prefix qgrid`
+## Installation
+The package has been made using Poetry, and can be installed via:
 
-`jupyter nbextension enable --py --sys-prefix widgetsnbextension`
+```
+$ git clone https://github.com/Acusick1/ScottishWalks
+$ poetry install
+```
+Or, without Poetry:
+```
+$ pip -m install .
+```
 
+To enable qgrid in Jupyter (used for DataFrame filtering):
+
+```
+$ jupyter nbextension enable --py --sys-prefix qgrid
+$ jupyter nbextension enable --py --sys-prefix widgetsnbextension
+```
 ## Notes
 
 ### Link names
