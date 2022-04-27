@@ -25,3 +25,5 @@ Area data currently taken from stripping link, could be taken when traversing th
 
 ### Webdriver
 Instructions do not contain info on webdriver (Chrome). Package should come with data and no need to scrape data, therefore "main" function not required. Either remove web scraping packages from poetry (or add to dev dependencies), or have development and product branches?
+
+**Until decided... Download the necessary webdriver and ensure it is on the PATH**

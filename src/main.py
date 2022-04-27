@@ -2,6 +2,7 @@ import json
 import time
 import re
 import os
+import platform
 from typing import Iterable, List
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -12,7 +13,7 @@ from src.settings import DATASET_PATH, PROJECT_PATH
 BASE_URL = "https://www.walkhighlands.co.uk"
 AREA_LINKS = set()
 WALK_LINKS = set()
-AREA_LINKS_FILE = "../arealinks.json"
+AREA_LINKS_FILE = PROJECT_PATH / "arealinks.json"
 DELAY = 0.5
 
 
@@ -131,6 +132,8 @@ def search_areas(driver):
     walks = []
     for area in AREA_LINKS:
 
+        print(f"Searching walks within area: {area}")
+
         driver.get(area)
         time.sleep(DELAY)
         walk_table = driver.find_element(by=By.CLASS_NAME, value="table1")
@@ -148,7 +151,14 @@ def search_areas(driver):
 
 
 def main():
-    driver = webdriver.Chrome()
+
+    if platform.system() == "Windows":
+        driver = webdriver.Chrome()
+    elif platform.system() == "Linux":
+        driver = webdriver.Firefox()
+    else:
+        Exception(f"No webdriver setup for {platform.system()} system")
+
     driver.get(BASE_URL)
 
     nav_bar = WebDriverWait(driver, 10).until(lambda d: d.find_element(by=By.ID, value="nav"))
