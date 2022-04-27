@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "scraper"
+name = "ScottishWalks"
 version = "0.1.0"
 description = ""
 authors = ["Acusick1 <andrewcusick13@outlook.com>"]
