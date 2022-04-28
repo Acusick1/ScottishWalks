@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
 from typing import List
-import src.data
+from src import data
 
 
 def parse(link: str):

@@ -11,7 +11,7 @@ from selenium.common.exceptions import NoSuchElementException
 from src.settings import DATASET_PATH, PROJECT_PATH
 
 BASE_URL = "https://www.walkhighlands.co.uk"
-AREA_LINKS = set()
+AREA_LINKS = {}
 WALK_LINKS = set()
 AREA_LINKS_FILE = PROJECT_PATH / "arealinks.json"
 DELAY = 0.5
@@ -119,34 +119,37 @@ def recursive(driver, hrefs):
         try:
             area_table = driver.find_element(by=By.ID, value="arealist")
             hrefs = link_filter(get_unique_links(area_table))
-            # TODO: just add all hrefs to AREA_LINKS directly?
-            recursive(driver, hrefs)
+            area = {h: hrefs}
 
         except NoSuchElementException:
 
-            AREA_LINKS.add(h)
+            area = {h: ""}
+
+        AREA_LINKS.update(area)
 
 
 def search_areas(driver):
 
-    walks = []
-    for area in AREA_LINKS:
+    for area_link, sub_link in AREA_LINKS.items():
 
-        print(f"Searching walks within area: {area}")
+        name = area_link.rstrip("/").split("/")[-1]
+        print(f"Searching walks within area: {area_link}")
 
-        driver.get(area)
-        time.sleep(DELAY)
-        walk_table = driver.find_element(by=By.CLASS_NAME, value="table1")
-        walk_links = link_filter(get_unique_links(walk_table))
+        walks = []
+        for sub in sub_link:
+            driver.get(sub)
+            time.sleep(DELAY)
+            walk_table = driver.find_element(by=By.CLASS_NAME, value="table1")
+            walk_links = link_filter(get_unique_links(walk_table))
 
-        for walk in walk_links:
+            for walk in walk_links:
 
-            walk_data = get_walk_data(driver, walk)
+                walk_data = get_walk_data(driver, walk)
 
-            if walk_data is not None:
-                walks.append(walk_data)
+                if walk_data is not None:
+                    walks.append(walk_data)
 
-        with open(f"{DATASET_PATH}{os.sep}{walks[0]['Area0']}walks.json", 'w') as fout:
+        with open(f"{DATASET_PATH}{os.sep}{name}walks.json", 'w') as fout:
             json.dump(walks, fout)
 
 
@@ -171,7 +174,7 @@ def main():
     else:
         recursive(driver, link_filter(get_unique_links(lists)))
         with open(area_links_path, 'w') as fout:
-            json.dump(list(AREA_LINKS), fout)
+            json.dump(AREA_LINKS, fout)
 
     search_areas(driver)
 
