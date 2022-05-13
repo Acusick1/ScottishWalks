@@ -4,7 +4,7 @@ from src.settings import DATASET_PATH
 
 
 def load_walk_data():
-    file_gen = DATASET_PATH.glob("*.json")
+    file_gen = DATASET_PATH.glob("*walks.json")
 
     dfs = []  # an empty list to store the data frames
     for file in file_gen:
