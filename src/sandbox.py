@@ -70,6 +70,8 @@ def main():
     coords = pd.DataFrame(coords)
     df = pd.concat([df, coords], axis=1)
     df.drop(columns="Start Grid Ref", inplace=True)
+    df.dropna(subset=["lat", "lon"], inplace=True)
+    df.reset_index(drop=True, inplace=True)
 
     return df
 
