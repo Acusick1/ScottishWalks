@@ -61,8 +61,8 @@ def main():
         try:
             loc = grid2latlong(p)
             long = loc.longitude if loc.longitude > 0 else 360 + loc.longitude
-            coords["lat"].append(loc.latitude)
-            coords["lon"].append(long)
+            coords["lat"].append(float(loc.latitude))
+            coords["lon"].append(float(long))
         except OSGridError:
             coords["lat"].append(None)
             coords["lon"].append(None)

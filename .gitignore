@@ -1,3 +1,4 @@
 *.log
+*.json
 notebooks/.ipynb_checkpoints/
 .idea/
