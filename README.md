@@ -1,4 +1,9 @@
-# Scottish Walks Database
+# Scottish Walks
+Webapp to view walk starting locations, routes, and allow filtering based on user preferences such as duration, total elevation, and number of Munros climbed. Data has been scraped from [walkhighlands.co.uk](https://www.walkhighlands.co.uk), and GPS routes are currently scraped on request when a user clicks on a given walk.
+
+The motivation for this project is that no current website allows for multiple user filters at once. This is a simple, user-friendly approach that allows users to view walks across the country or a specific area, and filter based on any number of individual preferences.
+
+Streamlit has been used for the initial webapp which can filter the data, but cannot display the routes as the simplified notebook can. The current mapping package is relatively immature (basic Python copy of a native JavaScript library), therefore building a full frontend will likely be required for full functionality.
 
 ## Installation
 The package has been made using Poetry, and can be installed via:
