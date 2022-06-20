@@ -5,10 +5,15 @@ The motivation for this project is that no current website allows for multiple u
 
 Streamlit has been used for the initial webapp which can filter the data, but cannot display the routes as the simplified notebook can. The current mapping package is relatively immature (basic Python copy of a native JavaScript library), therefore building a full frontend will likely be required for full functionality.
 
-![Map view](https://www.dropbox.com/s/2dje4ci5qfeeknm/dashboard_all.png?dl=0)
+---
+### Dashboard view with all walks
+![Map](https://www.dropbox.com/s/2dje4ci5qfeeknm/dashboard_all.png?raw=1)
 
-![Filtered walks based on multiple preferences](https://www.dropbox.com/s/crgnt7z5viq261d/dashboard_filtered.png?dl=0)
+---
+### Filtered walks example
+![Filtering](https://www.dropbox.com/s/crgnt7z5viq261d/dashboard_filtered.png?raw=1)
 
+---
 ## Installation
 The package has been made using Poetry, and can be installed via:
 
