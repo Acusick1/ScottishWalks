@@ -6,12 +6,15 @@ The motivation for this project is that no current website allows for multiple u
 Streamlit has been used for the initial webapp which can filter the data, but cannot display the routes as the simplified notebook can. The current mapping package is relatively immature (basic Python copy of a native JavaScript library), therefore building a full frontend will likely be required for full functionality.
 
 ---
+## Example images
 ### Dashboard view with all walks
 ![Map](https://www.dropbox.com/s/2dje4ci5qfeeknm/dashboard_all.png?raw=1)
 
----
-### Filtered walks example
+### Filtered walks
 ![Filtering](https://www.dropbox.com/s/crgnt7z5viq261d/dashboard_filtered.png?raw=1)
+
+### GPS on-click (currently only available in notebook format)
+![GPS](https://www.dropbox.com/s/2vaah7p3rybqyp2/gps_example.png?raw=1)
 
 ---
 ## Installation
