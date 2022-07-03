@@ -1,62 +1,12 @@
-import pandas as pd
 import streamlit as st
-from src import sandbox
 import leafmap.foliumap as leafmap
-
-numeric = (int, float)
+from src import sandbox
+from utils.streamlit import DirectionalSlider
 
 
 @st.cache
 def load_data():
     return sandbox.main()
-
-
-class directional_slider():
-
-    reverse = False
-    key = ""
-
-    def __init__(self,
-                 name: str,
-                 min_value: numeric,
-                 max_value: numeric,
-                 key: str,
-                 reverse: bool = False,
-                 sidebar: bool = True,
-                 **kwargs):
-
-        """Abstraction layer for st.slider, sets slider initial value based on whether slider values are omitted in an
-                ascending or descending fashion. Also defines method to omit values as such."""
-
-        # TODO: Ensure kwargs are not duplicated by args (or vice versa)
-
-        value = max_value if reverse else min_value
-
-        # TODO: How to pass args as single variable
-        if sidebar:
-            st.sidebar.slider(name,
-                              min_value=min_value,
-                              max_value=max_value,
-                              value=value,
-                              key=key,
-                              **kwargs)
-        else:
-            st.slider(name,
-                      min_value=min_value,
-                      max_value=max_value,
-                      value=value,
-                      key=key,
-                      **kwargs)
-
-    def on_change(self, df: pd.DataFrame, col: str):
-
-        if self.reverse:
-
-            df = df.loc[df[col] <= st.session_state[self.key]]
-        else:
-            df = df.loc[df[col] >= st.session_state[self.key]]
-
-        return df
 
 
 if __name__ == "__main__":
@@ -69,37 +19,36 @@ if __name__ == "__main__":
     max_grade_cutoff = 5
     max_bog_cutoff = 5
 
-    munro_slider = directional_slider("Munros Climbed",
-                                      min_value=0,
-                                      max_value=int(max_munros),
-                                      key="munro_slider")
+    DirectionalSlider("Munros Climbed",
+                      min_value=0,
+                      max_value=int(max_munros),
+                      key="munro_slider")
 
-    directional_slider("Difficulty",
-                       min_value=0,
-                       max_value=max_grade_cutoff,
-                       key="grade_slider",
-                       reverse=True)
+    DirectionalSlider("Difficulty",
+                      min_value=0,
+                      max_value=max_grade_cutoff,
+                      key="grade_slider",
+                      reverse=True)
 
-    directional_slider("Bog Factor",
-                       min_value=0,
-                       max_value=max_bog_cutoff,
-                       key="bog_slider",
-                       reverse=True)
+    DirectionalSlider("Bog Factor",
+                      min_value=0,
+                      max_value=max_bog_cutoff,
+                      key="bog_slider",
+                      reverse=True)
 
-    directional_slider("User Rating",
-                       min_value=0.,
-                       max_value=5.,
-                       step=0.5,
-                       key="rating_slider")
+    DirectionalSlider("User Rating",
+                      min_value=0.,
+                      max_value=5.,
+                      step=0.5,
+                      key="rating_slider")
 
-    directional_slider("No. of Votes",
-                       min_value=0,
-                       max_value=int(max_votes),
-                       step=5,
-                       key="vote_slider")
+    DirectionalSlider("No. of Votes",
+                      min_value=0,
+                      max_value=int(max_votes),
+                      step=5,
+                      key="vote_slider")
 
-    df = munro_slider.on_change(df, "Munros Climbed")
-    # df = df.loc[df["Munros Climbed"] >= st.session_state.munro_slider]
+    df = df.loc[df["Munros Climbed"] >= st.session_state.munro_slider]
     df = df.loc[df["Rating"] >= st.session_state.rating_slider]
     df = df.loc[df["Votes"] >= st.session_state.vote_slider]
     df = df.loc[df["Grade"] <= st.session_state.grade_slider]
@@ -111,6 +60,7 @@ if __name__ == "__main__":
                       min_value=0.,
                       max_value=max_time_cutoff,
                       value=(0., max_time_cutoff),
+                      step=0.5,
                       key="time_slider")
 
     if st.session_state.grade_slider < max_grade_cutoff:
@@ -126,13 +76,23 @@ if __name__ == "__main__":
     latlon = df[["lat", "lon", "Link"]]
     latlon.reset_index(drop=True, inplace=True)
 
-    m = leafmap.Map(center=(56, 355), zoom=6)
-    m.add_points_from_xy(latlon, x="lon", y="lat")
+    m = leafmap.Map()
+    if latlon.shape[0]:
+
+        center = (latlon["lat"].mean(), latlon["lon"].mean())
+
+        m.add_points_from_xy(latlon, x="lon", y="lat")
+
+        padding = 0.05
+        min_bounds = (latlon["lat"].min() - padding, latlon["lon"].min() - padding)
+        max_bounds = (latlon["lat"].max() + padding, latlon["lon"].max() + padding)
+
+        m.fit_bounds([min_bounds, max_bounds])
+    else:
+        m.set_center(lat=56.5, lon=355.5, zoom=6.25)
 
     # Display
     st.write("Scottish Walks Filter")
     m.to_streamlit()
-
-    # st.map(latlon)
     st.write(f"Total Walks: {len(df)}")
     st.dataframe(df)
