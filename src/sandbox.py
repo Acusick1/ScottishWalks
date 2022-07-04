@@ -59,6 +59,8 @@ def main():
     coords = {"lat": [], "lon": []}
     for p in df["Start Grid Ref"]:
         try:
+            # TODO: This gives wrong longitude for some walks (e.g. castle stalker) but GPX gives correct position, may
+            #   need to use starting point of that instead
             loc = grid2latlong(p)
             long = loc.longitude if loc.longitude > 0 else 360 + loc.longitude
             coords["lat"].append(float(loc.latitude))
