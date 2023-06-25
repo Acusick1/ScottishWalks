@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 import leafmap.foliumap as leafmap
 from src import sandbox
@@ -9,15 +10,34 @@ def load_data():
     return sandbox.main()
 
 
-if __name__ == "__main__":
+def sidebar_filters(df: pd.DataFrame):
 
-    df = load_data()
+    df = df.loc[df["Munros Climbed"] >= st.session_state.munro_slider]
+    df = df.loc[df["Rating"] >= st.session_state.rating_slider]
+    df = df.loc[df["Votes"] >= st.session_state.vote_slider]
+    df = df.loc[df["Grade"] <= st.session_state.grade_slider]
+    df = df.loc[df["Bog"] <= st.session_state.bog_slider]
+    df = df.loc[df["Grade"] <= st.session_state.grade_slider]
+    df = df.loc[df["Time"] >= st.session_state.time_slider[0]]
+    df = df.loc[df["Time"] <= st.session_state.time_slider[1]]
 
-    max_munros = df["Munros Climbed"].max()
-    max_votes = round(df["Votes"].max(), -1)
+    return df
 
+
+def get_sliders(df: pd.DataFrame):
+
+    # Static filters
     max_grade_cutoff = 5
     max_bog_cutoff = 5
+    max_time_cutoff = 10.
+
+    # Dynamic filters
+    if df.shape[0]:
+        max_munros = max(df["Munros Climbed"].max(), 1)
+        max_votes = round(df["Votes"].max(), -1)
+    else:
+        max_munros = 1
+        max_votes = 1
 
     DirectionalSlider("Munros Climbed",
                       min_value=0,
@@ -48,14 +68,6 @@ if __name__ == "__main__":
                       step=5,
                       key="vote_slider")
 
-    df = df.loc[df["Munros Climbed"] >= st.session_state.munro_slider]
-    df = df.loc[df["Rating"] >= st.session_state.rating_slider]
-    df = df.loc[df["Votes"] >= st.session_state.vote_slider]
-    df = df.loc[df["Grade"] <= st.session_state.grade_slider]
-    df = df.loc[df["Bog"] <= st.session_state.bog_slider]
-
-    max_time_cutoff = float(min(10, df["Time"].max()))
-
     st.sidebar.slider("Time",
                       min_value=0.,
                       max_value=max_time_cutoff,
@@ -63,17 +75,32 @@ if __name__ == "__main__":
                       step=0.5,
                       key="time_slider")
 
-    if st.session_state.grade_slider < max_grade_cutoff:
-        df = df.loc[df["Grade"] <= st.session_state.grade_slider]
+if __name__ == "__main__":
 
-    if st.session_state.bog_slider < max_bog_cutoff:
-        df = df.loc[df["Bog"] <= st.session_state.bog_slider]
+    st.write("Scottish Walks Filter")
 
-    df = df.loc[df["Time"] >= st.session_state.time_slider[0]]
-    if st.session_state.time_slider[1] < max_time_cutoff:
-        df = df.loc[df["Time"] <= st.session_state.time_slider[1]]
+    df = load_data()
 
-    latlon = df[["lat", "lon", "Link"]]
+    unique_regions = sorted(df['Area0'].unique().tolist())
+    unique_regions.insert(0, 'All')
+
+    st.selectbox('Region', unique_regions, key="region_selector")
+
+    # Filter based on the selected_region
+    if st.session_state.region_selector != 'All':
+        df = df[df['Area0'] == st.session_state.region_selector]
+
+    try:
+        if "time_slider" in st.session_state:
+            df = sidebar_filters(df)
+
+    except Exception as e:
+        print(e)
+
+    get_sliders(df)
+    latlon = df[["lat", "lon", "Name", "Distance", "Ascent", "Link", "GPX"]].copy()
+    latlon["Distance"] = latlon["Distance"].apply(lambda x: f"{x}km")
+    latlon["Ascent"] = latlon["Ascent"].apply(lambda x: f"{x}m")
     latlon.reset_index(drop=True, inplace=True)
 
     m = leafmap.Map()
@@ -81,7 +108,7 @@ if __name__ == "__main__":
 
         center = (latlon["lat"].mean(), latlon["lon"].mean())
 
-        m.add_points_from_xy(latlon, x="lon", y="lat")
+        m.add_points_from_xy(latlon, x="lon", y="lat", popup=latlon.columns[2:])
 
         padding = 0.05
         min_bounds = (latlon["lat"].min() - padding, latlon["lon"].min() - padding)
@@ -91,8 +118,11 @@ if __name__ == "__main__":
     else:
         m.set_center(lat=56.5, lon=355.5, zoom=6.25)
 
+    display_df = df.copy()
+    display_df = display_df[["Name", "Area0", "Distance", "Ascent", "Time", "Rating", "Votes", "Grade", "Bog", "Munros Climbed", "Munro"]]
+    display_df = display_df.rename(columns={"Area0": "Region", "Distance": "Distance (km)", "Ascent": "Ascent (m)", "Time": "Time (avg hrs)"})
+
     # Display
-    st.write("Scottish Walks Filter")
     m.to_streamlit()
     st.write(f"Total Walks: {len(df)}")
-    st.dataframe(df)
+    st.dataframe(display_df)

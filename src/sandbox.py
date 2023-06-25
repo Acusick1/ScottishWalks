@@ -5,6 +5,21 @@ from OSGridConverter.base import OSGridError
 from src.settings import DATASET_PATH
 
 
+def format_operations(element):
+    if isinstance(element, str):
+        # capitalize the first letter of the string
+        return element.capitalize()
+    elif isinstance(element, (float, int)):
+        # round the float to two decimal places
+        return round(element, 2)
+    else:
+        return element
+    
+
+def html_link(x, text="click here"):
+    return f'<a href="{x}" target="blank">{text}</a>'
+
+
 def main():
     file_gen = DATASET_PATH.glob("*walks.json")
 
@@ -35,9 +50,8 @@ def main():
     df["CGD"] = df[hill_columns].agg(lambda x: ', '.join(filter(None, x)), axis=1)
     df.drop(columns=hill_columns, inplace=True)
 
-    df["Distance (km)"] = df["Distance"].str.extract(r"^([0-9\.]*)")
-    df.drop(columns="Distance", inplace=True)
-
+    # Kilometers
+    df["Distance"] = df["Distance"].str.extract(r"^([0-9\.]*)")
     df["Time"].fillna(df["Time (summer conditions)"], inplace=True)
     df.drop(columns="Time (summer conditions)", inplace=True)
 
@@ -55,6 +69,8 @@ def main():
     df["Rating"] = df["Rating"].astype(float)
     df["Votes"] = df["Votes"].astype(int)
     df["Ascent"] = df["Ascent"].str.extract(r"(\d+\.?\d*)").astype(int)
+    df["Link"] = df["Link"].apply(lambda x: html_link(x))
+    df["GPX"] = df["GPX"].apply(lambda x: html_link(x, text="dowlonad"))
 
     coords = {"lat": [], "lon": []}
     for p in df["Start Grid Ref"]:
@@ -73,6 +89,8 @@ def main():
     df = pd.concat([df, coords], axis=1)
     df.drop(columns="Start Grid Ref", inplace=True)
     df.dropna(subset=["lat", "lon"], inplace=True)
+    df = df.applymap(format_operations)
+
     df.reset_index(drop=True, inplace=True)
 
     return df
