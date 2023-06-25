@@ -2,7 +2,7 @@ import json
 import pandas as pd
 from OSGridConverter import grid2latlong
 from OSGridConverter.base import OSGridError
-from src.settings import DATASET_PATH
+from settings import RAW_DATA_PATH, DATASET_PATH
 
 
 def format_operations(element):
@@ -21,7 +21,7 @@ def html_link(x, text="click here"):
 
 
 def main():
-    file_gen = DATASET_PATH.glob("*walks.json")
+    file_gen = RAW_DATA_PATH.glob("*walks.json")
 
     dfs = []  # an empty list to store the data frames
     for file in file_gen:
@@ -87,11 +87,11 @@ def main():
 
     coords = pd.DataFrame(coords)
     df = pd.concat([df, coords], axis=1)
-    df.drop(columns="Start Grid Ref", inplace=True)
-    df.dropna(subset=["lat", "lon"], inplace=True)
     df = df.applymap(format_operations)
+    df["Start Grid Ref"] = df["Start Grid Ref"].str.upper()
 
     df.reset_index(drop=True, inplace=True)
+    df.to_parquet(DATASET_PATH, index=False)
 
     return df
 

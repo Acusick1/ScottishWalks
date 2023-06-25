@@ -8,7 +8,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
-from src.settings import DATASET_PATH, PROJECT_PATH
+from settings import RAW_DATA_PATH, PROJECT_PATH
 
 BASE_URL = "https://www.walkhighlands.co.uk"
 AREA_LINKS = {}
@@ -149,7 +149,7 @@ def search_areas(driver):
                 if walk_data is not None:
                     walks.append(walk_data)
 
-        with open(f"{DATASET_PATH}{os.sep}{name}walks.json", 'w') as fout:
+        with open(f"{RAW_DATA_PATH}{os.sep}{name}walks.json", 'w') as fout:
             json.dump(walks, fout)
 
 

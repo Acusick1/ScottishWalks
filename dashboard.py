@@ -1,13 +1,33 @@
 import pandas as pd
 import streamlit as st
 import leafmap.foliumap as leafmap
-from src import sandbox
 from utils.streamlit import DirectionalSlider
+from settings import DATASET_PATH
+
+
+# def handle_click(map_handle, data, **kwargs):
+#     route = gpx.parse(data["GPX"])
+#     route = gpx.positive_long(route)
+#     latlon = list(zip(route.lat, route.lon))
+#     path = AntPath(locations=latlon)
+
+#     # try:
+#     #    map_handle.substitute_layer(handle_click.current, path)
+#     # except (AttributeError, LayerException):
+#     map_handle.add_layer(path)
+
+#     handle_click.current = path
+
+#     map_handle.center = kwargs["coordinates"]
+#     map_handle.zoom = 11
+#     # map_handle.fit_bounds = get_lat_lon_bounds(route)
+
+#     display(data)
 
 
 @st.cache
 def load_data():
-    return sandbox.main()
+    return pd.read_parquet(DATASET_PATH)
 
 
 def sidebar_filters(df: pd.DataFrame):
@@ -98,9 +118,10 @@ if __name__ == "__main__":
         print(e)
 
     get_sliders(df)
-    latlon = df[["lat", "lon", "Name", "Distance", "Ascent", "Link", "GPX"]].copy()
+    latlon = df[["lat", "lon", "Name", "Distance", "Ascent", "Rating", "Link", "GPX"]].copy()
     latlon["Distance"] = latlon["Distance"].apply(lambda x: f"{x}km")
     latlon["Ascent"] = latlon["Ascent"].apply(lambda x: f"{x}m")
+    latlon = latlon.dropna(subset=["lat", "lon"])
     latlon.reset_index(drop=True, inplace=True)
 
     m = leafmap.Map()
@@ -108,6 +129,14 @@ if __name__ == "__main__":
 
         center = (latlon["lat"].mean(), latlon["lon"].mean())
 
+        # for _, p in filtered_df.iterrows():
+        #     mark = Marker(location=(p["lat"], p["lon"]), draggable=False, title=p["Name"])
+        #     mark.on_click(functools.partial(handle_click, m, p))
+        #     markers.append(mark)
+
+        # marker_cluster = MarkerCluster(markers=markers)
+
+        # m.add_layer(marker_cluster)
         m.add_points_from_xy(latlon, x="lon", y="lat", popup=latlon.columns[2:])
 
         padding = 0.05
@@ -119,7 +148,7 @@ if __name__ == "__main__":
         m.set_center(lat=56.5, lon=355.5, zoom=6.25)
 
     display_df = df.copy()
-    display_df = display_df[["Name", "Area0", "Distance", "Ascent", "Time", "Rating", "Votes", "Grade", "Bog", "Munros Climbed", "Munro"]]
+    display_df = display_df[["Name", "Area0", "Distance", "Ascent", "Time", "Start Grid Ref", "Rating", "Votes", "Grade", "Bog", "Munros Climbed", "Munro"]]
     display_df = display_df.rename(columns={"Area0": "Region", "Distance": "Distance (km)", "Ascent": "Ascent (m)", "Time": "Time (avg hrs)"})
 
     # Display

@@ -1,10 +1,10 @@
 import json
 import pandas as pd
-from src.settings import DATASET_PATH
+from settings import RAW_DATA_PATH
 
 
 def load_walk_data():
-    file_gen = DATASET_PATH.glob("*walks.json")
+    file_gen = RAW_DATA_PATH.glob("*walks.json")
 
     dfs = []  # an empty list to store the data frames
     for file in file_gen:
