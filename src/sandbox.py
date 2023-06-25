@@ -51,7 +51,7 @@ def main():
     df.drop(columns=hill_columns, inplace=True)
 
     # Kilometers
-    df["Distance"] = df["Distance"].str.extract(r"^([0-9\.]*)")
+    df["Distance"] = df["Distance"].str.extract(r"^([0-9\.]*)").astype(float)
     df["Time"].fillna(df["Time (summer conditions)"], inplace=True)
     df.drop(columns="Time (summer conditions)", inplace=True)
 
