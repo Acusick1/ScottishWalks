@@ -25,6 +25,13 @@ from settings import DATASET_PATH
 #     display(data)
 
 
+# Static filters
+max_munro_cutoff = 5
+max_grade_cutoff = 5
+max_bog_cutoff = 5
+max_time_cutoff = 10.
+
+
 @st.cache
 def load_data():
     return pd.read_parquet(DATASET_PATH)
@@ -35,33 +42,31 @@ def sidebar_filters(df: pd.DataFrame):
     df = df.loc[df["Munros Climbed"] >= st.session_state.munro_slider]
     df = df.loc[df["Rating"] >= st.session_state.rating_slider]
     df = df.loc[df["Votes"] >= st.session_state.vote_slider]
-    df = df.loc[df["Grade"] <= st.session_state.grade_slider]
-    df = df.loc[df["Bog"] <= st.session_state.bog_slider]
-    df = df.loc[df["Grade"] <= st.session_state.grade_slider]
     df = df.loc[df["Time"] >= st.session_state.time_slider[0]]
-    df = df.loc[df["Time"] <= st.session_state.time_slider[1]]
+    
+    if st.session_state.grade_slider < max_grade_cutoff:
+        df = df.loc[df["Grade"] <= st.session_state.grade_slider]
+
+    if st.session_state.bog_slider < max_bog_cutoff:
+        df = df.loc[df["Bog"] <= st.session_state.bog_slider]
+    
+    if st.session_state.time_slider[1] < max_time_cutoff:
+        df = df.loc[df["Time"] <= st.session_state.time_slider[1]]
 
     return df
 
 
 def get_sliders(df: pd.DataFrame):
 
-    # Static filters
-    max_grade_cutoff = 5
-    max_bog_cutoff = 5
-    max_time_cutoff = 10.
-
     # Dynamic filters
     if df.shape[0]:
-        max_munros = max(df["Munros Climbed"].max(), 1)
-        max_votes = round(df["Votes"].max(), -1)
+        max_votes = round(int(df["Votes"].max()), -1)
     else:
-        max_munros = 1
         max_votes = 1
 
     DirectionalSlider("Munros Climbed",
                       min_value=0,
-                      max_value=int(max_munros),
+                      max_value=max_munro_cutoff,
                       key="munro_slider")
 
     DirectionalSlider("Difficulty",
@@ -84,7 +89,7 @@ def get_sliders(df: pd.DataFrame):
 
     DirectionalSlider("No. of Votes",
                       min_value=0,
-                      max_value=int(max_votes),
+                      max_value=max(max_votes, 5),
                       step=5,
                       key="vote_slider")
 
@@ -118,14 +123,15 @@ if __name__ == "__main__":
         print(e)
 
     get_sliders(df)
-    latlon = df[["lat", "lon", "Name", "Distance", "Ascent", "Rating", "Link", "GPX"]].copy()
-    latlon["Distance"] = latlon["Distance"].apply(lambda x: f"{x}km")
-    latlon["Ascent"] = latlon["Ascent"].apply(lambda x: f"{x}m")
-    latlon = latlon.dropna(subset=["lat", "lon"])
-    latlon.reset_index(drop=True, inplace=True)
 
     m = leafmap.Map()
-    if latlon.shape[0]:
+    if df.shape[0]:
+
+        latlon = df[["lat", "lon", "Name", "Distance", "Ascent", "Rating", "Link", "GPX"]].copy()
+        latlon["Distance"] = latlon["Distance"].apply(lambda x: f"{x}km")
+        latlon["Ascent"] = latlon["Ascent"].apply(lambda x: f"{x}m")
+        latlon = latlon.dropna(subset=["lat", "lon"])
+        latlon.reset_index(drop=True, inplace=True)
 
         center = (latlon["lat"].mean(), latlon["lon"].mean())
 
