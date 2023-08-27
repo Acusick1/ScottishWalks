@@ -2,7 +2,6 @@ import requests
 import pandas as pd
 import numpy as np
 from bs4 import BeautifulSoup
-from typing import List
 from src import data
 
 
@@ -22,7 +21,7 @@ def parse(link: str):
     return pd.DataFrame(info).astype(float)
 
 
-def get_lat_long_tuples(df: pd.DataFrame) -> List[tuple]:
+def get_lat_long_tuples(df: pd.DataFrame) -> list[tuple[float, float]]:
 
     return list(zip(df.lat, df.lon))
 

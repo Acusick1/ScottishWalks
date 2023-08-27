@@ -39,11 +39,14 @@ def load_data():
 
 def sidebar_filters(df: pd.DataFrame):
 
-    df = df.loc[df["Munros Climbed"] >= st.session_state.munro_slider]
+    df = df.loc[df["Munros Climbed"] >= st.session_state.munro_slider[0]]
     df = df.loc[df["Rating"] >= st.session_state.rating_slider]
     df = df.loc[df["Votes"] >= st.session_state.vote_slider]
     df = df.loc[df["Time"] >= st.session_state.time_slider[0]]
     
+    if st.session_state.munro_slider[1] < max_munro_cutoff:
+        df = df.loc[df["Munros Climbed"] <= st.session_state.munro_slider[1]]
+
     if st.session_state.grade_slider < max_grade_cutoff:
         df = df.loc[df["Grade"] <= st.session_state.grade_slider]
 
@@ -63,10 +66,11 @@ def get_sliders(df: pd.DataFrame):
         max_votes = round(int(df["Votes"].max()), -1)
     else:
         max_votes = 1
-
-    DirectionalSlider("Munros Climbed",
+    
+    st.sidebar.slider("Munros Climbed",
                       min_value=0,
                       max_value=max_munro_cutoff,
+                      value=(0, max_munro_cutoff),
                       key="munro_slider")
 
     DirectionalSlider("Difficulty",
@@ -93,7 +97,7 @@ def get_sliders(df: pd.DataFrame):
                       step=5,
                       key="vote_slider")
 
-    st.sidebar.slider("Time",
+    st.sidebar.slider("Time (avg)",
                       min_value=0.,
                       max_value=max_time_cutoff,
                       value=(0., max_time_cutoff),
@@ -102,7 +106,7 @@ def get_sliders(df: pd.DataFrame):
 
 if __name__ == "__main__":
 
-    st.write("Scottish Walks Filter")
+    st.write("Scottish Walks")
 
     df = load_data()
 
@@ -122,16 +126,40 @@ if __name__ == "__main__":
     except Exception as e:
         print(e)
 
+
+    st.sidebar.title("Filters")
     get_sliders(df)
+
+    st.sidebar.title("Quick Summit Filters")
+    # Sidebar with checkboxes
+    corbett_check = st.sidebar.checkbox('Corbett')
+    graham_check = st.sidebar.checkbox('Graham')
+    donald_check = st.sidebar.checkbox('Donald')
+    sub_2000_check = st.sidebar.checkbox('Sub 2000')
+
+    # Filter DataFrame based on selected checkboxes
+    if corbett_check:
+        df = df[(df['Corbett'].notna()) & (df['Corbett'] != '')]
+
+    if graham_check:
+        df = df[(df['Graham'].notna()) & (df['Graham'] != '')]
+
+    if donald_check:
+        df = df[(df['Donald'].notna()) & (df['Donald'] != '')]
+
+    if sub_2000_check:
+        df = df[(df['Sub 2000'].notna()) & (df['Sub 2000'] != '')]
 
     m = leafmap.Map()
     if df.shape[0]:
 
-        latlon = df[["lat", "lon", "Name", "Distance", "Ascent", "Rating", "Link", "GPX"]].copy()
+        latlon = df[["lat", "lon", "Name", "Distance", "Time", "Ascent", "Rating", "Link", "GPX"]].copy()
         latlon["Distance"] = latlon["Distance"].apply(lambda x: f"{x}km")
         latlon["Ascent"] = latlon["Ascent"].apply(lambda x: f"{x}m")
-        latlon = latlon.dropna(subset=["lat", "lon"])
-        latlon.reset_index(drop=True, inplace=True)
+        latlon = latlon.dropna(subset=["lat", "lon"]).reset_index(drop=True)
+
+        latlon["Rating"] = latlon["Rating"].apply(lambda x: f"{x:.2f}/5")
+        latlon["Time"] = latlon["Time"].apply(lambda x: f"{x:.2f} hours (avg)")
 
         center = (latlon["lat"].mean(), latlon["lon"].mean())
 
@@ -154,7 +182,7 @@ if __name__ == "__main__":
         m.set_center(lat=56.5, lon=355.5, zoom=6.25)
 
     display_df = df.copy()
-    display_df = display_df[["Name", "Area0", "Distance", "Ascent", "Time", "Start Grid Ref", "Rating", "Votes", "Grade", "Bog", "Munros Climbed", "Munro"]]
+    display_df = display_df[["Name", "Area0", "Distance", "Ascent", "Time", "Start Grid Ref", "Rating", "Votes", "Grade", "Bog", "Munros Climbed", "Munro", "Corbett", "Graham", "Donald", "Sub 2000"]]
     display_df = display_df.rename(columns={"Area0": "Region", "Distance": "Distance (km)", "Ascent": "Ascent (m)", "Time": "Time (avg hrs)"})
 
     # Display

@@ -1,14 +1,38 @@
 import json
 import pandas as pd
+import re
 from OSGridConverter import grid2latlong
 from OSGridConverter.base import OSGridError
 from settings import RAW_DATA_PATH, DATASET_PATH
 
 
+def capitalize_string(title, exceptions=['and', 'or', 'the', 'on', 'in', 'of', 'to', 'via', 'near', 'by', 'up', 'from']):
+    # This regular expression captures words and their trailing punctuation
+    pattern = r"([\w-]+['\w-]*[\.,!?:;]*)(\s*)"
+    
+    capitalized_words = []
+    
+    # Use findall to get a list of tuples where each tuple contains (word, space)
+    for word, space in re.findall(pattern, title):
+        
+        # Capitalize the first word regardless of its presence in the exceptions list
+        if not capitalized_words:
+            capitalized_words.append(word.capitalize())
+        elif word.lower() in exceptions:
+            capitalized_words.append(word.lower())
+        else:
+            capitalized_words.append(word.capitalize())
+            
+        # Append the space or delimiter that followed the word
+        capitalized_words.append(space)
+        
+    return ''.join(capitalized_words)
+
+
 def format_operations(element):
-    if isinstance(element, str):
-        # capitalize the first letter of the string
-        return element.capitalize()
+    if isinstance(element, str) and not element.startswith("<"):
+        # capitalize the string
+        return capitalize_string(element)
     elif isinstance(element, (float, int)):
         # round the float to two decimal places
         return round(element, 2)
@@ -38,17 +62,19 @@ def main():
             df[col] = df[col].fillna(df[col + 's'])
             df = df.drop(columns=col + 's')
 
-    hill_names = ["corbett", "donald", "graham"]
-    hill_columns = [col for col in df.columns if any(hill in col.lower() for hill in hill_names)]
+    hill_names = ["munro", "corbett", "donald", "graham", "sub 2000"]
 
-    df[["Munro", "Sub 2000"]] = df[["Munro", "Sub 2000"]].fillna("")
+    for hill_name in hill_names:
+        
+        hill_cols = [col for col in df.columns if hill_name in col.lower()]
+        df[hill_cols] = df[hill_cols].fillna("").astype(str)
+        combined_hill_col = df[hill_cols].agg(lambda x: ', '.join(filter(None, x)), axis=1)
+        
+        df.drop(columns=hill_cols, inplace=True)
+        df[hill_name.capitalize()] = combined_hill_col
+
     df["Munros Climbed"] = df["Munro"].str.count(",") + 1
     df.loc[df["Munro"] == "", "Munros Climbed"] = 0
-
-    df[hill_columns] = df[hill_columns].fillna("").astype(str)
-    # df[hill_columns] = df[hill_columns].astype(str)
-    df["CGD"] = df[hill_columns].agg(lambda x: ', '.join(filter(None, x)), axis=1)
-    df.drop(columns=hill_columns, inplace=True)
 
     # Kilometers
     df["Distance"] = df["Distance"].str.extract(r"^([0-9\.]*)").astype(float)
@@ -70,7 +96,7 @@ def main():
     df["Votes"] = df["Votes"].astype(int)
     df["Ascent"] = df["Ascent"].str.extract(r"(\d+\.?\d*)").astype(int)
     df["Link"] = df["Link"].apply(lambda x: html_link(x))
-    df["GPX"] = df["GPX"].apply(lambda x: html_link(x, text="dowlonad"))
+    df["GPX"] = df["GPX"].apply(lambda x: html_link(x, text="download"))
 
     coords = {"lat": [], "lon": []}
     for p in df["Start Grid Ref"]:
@@ -92,6 +118,7 @@ def main():
 
     df.reset_index(drop=True, inplace=True)
     df.to_parquet(DATASET_PATH, index=False)
+    df.to_csv(DATASET_PATH.with_suffix(".csv"), index=False)
 
     return df
 
