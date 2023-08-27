@@ -138,16 +138,16 @@ if __name__ == "__main__":
     sub_2000_check = st.sidebar.checkbox('Sub 2000')
 
     # Filter DataFrame based on selected checkboxes
-    if corbett_check:
+    if corbett_check and df.shape[0]:
         df = df[(df['Corbett'].notna()) & (df['Corbett'] != '')]
 
-    if graham_check:
+    if graham_check and df.shape[0]:
         df = df[(df['Graham'].notna()) & (df['Graham'] != '')]
 
-    if donald_check:
+    if donald_check and df.shape[0]:
         df = df[(df['Donald'].notna()) & (df['Donald'] != '')]
 
-    if sub_2000_check:
+    if sub_2000_check and df.shape[0]:
         df = df[(df['Sub 2000'].notna()) & (df['Sub 2000'] != '')]
 
     m = leafmap.Map()
