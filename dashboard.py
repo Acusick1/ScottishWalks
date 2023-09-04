@@ -29,7 +29,9 @@ from settings import DATASET_PATH
 max_munro_cutoff = 5
 max_grade_cutoff = 5
 max_bog_cutoff = 5
+max_votes_cutoff = 100
 max_time_cutoff = 10.
+max_dist = 25.
 
 
 @st.cache
@@ -43,6 +45,7 @@ def sidebar_filters(df: pd.DataFrame):
     df = df.loc[df["Rating"] >= st.session_state.rating_slider]
     df = df.loc[df["Votes"] >= st.session_state.vote_slider]
     df = df.loc[df["Time"] >= st.session_state.time_slider[0]]
+    df = df.loc[(df["Distance"] >= st.session_state.distance_slider[0]) & (df["Distance"] <= st.session_state.distance_slider[1])]
     
     if st.session_state.munro_slider[1] < max_munro_cutoff:
         df = df.loc[df["Munros Climbed"] <= st.session_state.munro_slider[1]]
@@ -63,7 +66,7 @@ def get_sliders(df: pd.DataFrame):
 
     # Dynamic filters
     if df.shape[0]:
-        max_votes = round(int(df["Votes"].max()), -1)
+        max_votes = min(round(int(df["Votes"].max()), -1), max_votes_cutoff)
     else:
         max_votes = 1
     
@@ -97,12 +100,19 @@ def get_sliders(df: pd.DataFrame):
                       step=5,
                       key="vote_slider")
 
-    st.sidebar.slider("Time (avg)",
+    st.sidebar.slider("Time (avg hours)",
                       min_value=0.,
                       max_value=max_time_cutoff,
                       value=(0., max_time_cutoff),
                       step=0.5,
                       key="time_slider")
+
+    st.sidebar.slider("Distance (km)",
+                    min_value=0.,
+                    max_value=max_dist,
+                    value=(0., max_dist),
+                    step=1.,
+                    key="distance_slider")
 
 if __name__ == "__main__":
 
