@@ -39,8 +39,13 @@ def load_data():
     return pd.read_parquet(DATASET_PATH)
 
 
-def sidebar_filters(df: pd.DataFrame):
+def filter_walks(df: pd.DataFrame):
 
+    # Filter based on the selected_region
+    if st.session_state.region_selector != 'All':
+        df = df[df['Region'] == st.session_state.region_selector]
+
+    # Filter based on sliders
     df = df.loc[df["Munros Climbed"] >= st.session_state.munro_slider[0]]
     df = df.loc[df["Rating"] >= st.session_state.rating_slider]
     df = df.loc[df["Votes"] >= st.session_state.vote_slider]
@@ -59,10 +64,25 @@ def sidebar_filters(df: pd.DataFrame):
     if st.session_state.time_slider[1] < max_time_cutoff:
         df = df.loc[df["Time"] <= st.session_state.time_slider[1]]
 
+    # Filter DataFrame based on selected checkboxes
+    if st.session_state.corbett_check and df.shape[0]:
+        df = df[(df['Corbett'].notna()) & (df['Corbett'] != '')]
+
+    if st.session_state.graham_check and df.shape[0]:
+        df = df[(df['Graham'].notna()) & (df['Graham'] != '')]
+
+    if st.session_state.donald_check and df.shape[0]:
+        df = df[(df['Donald'].notna()) & (df['Donald'] != '')]
+
+    if st.session_state.sub_2000_check and df.shape[0]:
+        df = df[(df['Sub 2000'].notna()) & (df['Sub 2000'] != '')]
+
     return df
 
 
-def get_sliders(df: pd.DataFrame):
+def get_sidebar_filters(df: pd.DataFrame):
+
+    st.sidebar.title("Filters")
 
     # Dynamic filters
     if df.shape[0]:
@@ -113,6 +133,14 @@ def get_sliders(df: pd.DataFrame):
                     value=(0., max_dist),
                     step=1.,
                     key="distance_slider")
+    
+    # Checkbox filters
+    st.sidebar.title("Quick Summit Filters")
+    st.sidebar.checkbox('Corbett', key="corbett_check")
+    st.sidebar.checkbox('Graham', key="graham_check")
+    st.sidebar.checkbox('Donald', key="donald_check")
+    st.sidebar.checkbox('Sub 2000',key="sub_2000_check")
+
 
 if __name__ == "__main__":
 
@@ -120,54 +148,22 @@ if __name__ == "__main__":
 
     df = load_data()
 
-    unique_regions = sorted(df['Area0'].unique().tolist())
+    unique_regions = sorted(df['Region'].unique().tolist())
     unique_regions.insert(0, 'All')
 
     st.selectbox('Region', unique_regions, key="region_selector")
 
-    # Filter based on the selected_region
-    if st.session_state.region_selector != 'All':
-        df = df[df['Area0'] == st.session_state.region_selector]
-
-    try:
-        if "time_slider" in st.session_state:
-            df = sidebar_filters(df)
-
-    except Exception as e:
-        print(e)
-
-
-    st.sidebar.title("Filters")
-    get_sliders(df)
-
-    st.sidebar.title("Quick Summit Filters")
-    # Sidebar with checkboxes
-    corbett_check = st.sidebar.checkbox('Corbett')
-    graham_check = st.sidebar.checkbox('Graham')
-    donald_check = st.sidebar.checkbox('Donald')
-    sub_2000_check = st.sidebar.checkbox('Sub 2000')
-
-    # Filter DataFrame based on selected checkboxes
-    if corbett_check and df.shape[0]:
-        df = df[(df['Corbett'].notna()) & (df['Corbett'] != '')]
-
-    if graham_check and df.shape[0]:
-        df = df[(df['Graham'].notna()) & (df['Graham'] != '')]
-
-    if donald_check and df.shape[0]:
-        df = df[(df['Donald'].notna()) & (df['Donald'] != '')]
-
-    if sub_2000_check and df.shape[0]:
-        df = df[(df['Sub 2000'].notna()) & (df['Sub 2000'] != '')]
+    get_sidebar_filters(df)
+    df = filter_walks(df)
 
     m = leafmap.Map()
     if df.shape[0]:
 
         latlon = df[["lat", "lon", "Name", "Distance", "Time", "Ascent", "Rating", "Link", "GPX"]].copy()
-        latlon["Distance"] = latlon["Distance"].apply(lambda x: f"{x}km")
-        latlon["Ascent"] = latlon["Ascent"].apply(lambda x: f"{x}m")
         latlon = latlon.dropna(subset=["lat", "lon"]).reset_index(drop=True)
 
+        latlon["Distance"] = latlon["Distance"].apply(lambda x: f"{x}km")
+        latlon["Ascent"] = latlon["Ascent"].apply(lambda x: f"{x}m")
         latlon["Rating"] = latlon["Rating"].apply(lambda x: f"{x:.2f}/5")
         latlon["Time"] = latlon["Time"].apply(lambda x: f"{x:.2f} hours (avg)")
 
@@ -179,8 +175,8 @@ if __name__ == "__main__":
         #     markers.append(mark)
 
         # marker_cluster = MarkerCluster(markers=markers)
-
         # m.add_layer(marker_cluster)
+
         m.add_points_from_xy(latlon, x="lon", y="lat", popup=latlon.columns[2:])
 
         padding = 0.05
@@ -192,10 +188,10 @@ if __name__ == "__main__":
         m.set_center(lat=56.5, lon=355.5, zoom=6.25)
 
     display_df = df.copy()
-    display_df = display_df[["Name", "Area0", "Distance", "Ascent", "Time", "Start Grid Ref", "Rating", "Votes", "Grade", "Bog", "Munros Climbed", "Munro", "Corbett", "Graham", "Donald", "Sub 2000"]]
-    display_df = display_df.rename(columns={"Area0": "Region", "Distance": "Distance (km)", "Ascent": "Ascent (m)", "Time": "Time (avg hrs)"})
+    display_df = display_df[["Name", "Region", "Distance", "Ascent", "Time", "Start Grid Ref", "Rating", "Votes", "Grade", "Bog", "Munros Climbed", "Munro", "Corbett", "Graham", "Donald", "Sub 2000"]]
+    display_df = display_df.rename(columns={"Distance": "Distance (km)", "Ascent": "Ascent (m)", "Time": "Time (avg hrs)"})
 
     # Display
     m.to_streamlit()
-    st.write(f"Total Walks: {len(df)}")
+    st.write(f"Total Walks: {display_df.shape[0]}")
     st.dataframe(display_df)

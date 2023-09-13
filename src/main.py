@@ -50,6 +50,18 @@ def get_walk_data(driver, walk_link):
     bog = test.find_element(by=By.CLASS_NAME, value="bog")
     bog = len(bog.find_elements(by=By.CSS_SELECTOR, value="img"))
 
+    # Find all links
+    all_links = driver.find_elements_by_tag_name('a')
+
+    # Loop through all found links to find Google Maps link
+    start_point_url = None
+    for link in all_links:
+        start_point_url = link.get_attribute('href')
+        if 'www.google.com/maps' in start_point_url:
+            break
+
+    print(f"URL: {start_point_url}")
+
     data = data | location
 
     data['Name'] = name.text
@@ -58,6 +70,7 @@ def get_walk_data(driver, walk_link):
     data['Grade'] = grade
     data['Bog'] = bog
     data["Link"] = walk_link
+    data["Start Point"] = start_point_url
     data["GPX"] = get_route_link(driver)
 
     return data

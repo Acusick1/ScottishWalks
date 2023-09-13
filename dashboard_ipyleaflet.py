@@ -2,14 +2,14 @@ import folium
 import leafmap.foliumap as leafmap
 import streamlit as st
 from ipyleaflet import AntPath, LayerException
-from src import sandbox, gpx
+from src import etl, gpx
 from utils.streamlit import DirectionalSlider
 import folium.plugins as plugins
 
 
 @st.cache
 def load_data():
-    return sandbox.main()
+    return etl.main()
 
 
 def get_lat_lon_bounds(df, padding=0.5):

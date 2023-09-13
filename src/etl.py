@@ -56,6 +56,8 @@ def main():
     df = pd.concat(dfs, ignore_index=True)  # concatenate all the data frames in the list.
 
     # Data cleaning
+    df = df.rename(columns={"Region": "Region", "Subregion": "Subregion"})
+
     for col in df.columns:
         # Combining plural columns
         if col + 's' in df.columns:
