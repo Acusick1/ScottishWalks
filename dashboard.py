@@ -26,12 +26,14 @@ from settings import DATASET_PATH
 
 
 # Static filters
-max_munro_cutoff = 5
-max_grade_cutoff = 5
-max_bog_cutoff = 5
-max_votes_cutoff = 100
-max_time_cutoff = 10.
-max_dist = 25.
+MAX_VALUES = {
+    "munro": 5,
+    "grade": 5,
+    "bog": 5,
+    "votes": 100,
+    "time": 10.0,
+    "distance": 25.0
+}
 
 
 @st.cache
@@ -41,70 +43,47 @@ def load_data():
 
 def filter_walks(df: pd.DataFrame):
 
-    # Filter based on the selected_region
-    if st.session_state.region_selector != 'All':
-        df = df[df['Region'] == st.session_state.region_selector]
-
-    # Filter based on sliders
-    df = df.loc[df["Munros Climbed"] >= st.session_state.munro_slider[0]]
-    df = df.loc[df["Rating"] >= st.session_state.rating_slider]
-    df = df.loc[df["Votes"] >= st.session_state.vote_slider]
-    df = df.loc[df["Time"] >= st.session_state.time_slider[0]]
-    df = df.loc[(df["Distance"] >= st.session_state.distance_slider[0]) & (df["Distance"] <= st.session_state.distance_slider[1])]
+    filters = [
+        (df["Region"] == st.session_state.region_selector) if st.session_state.region_selector != "All" else True,
+        df["Munros Climbed"].between(*st.session_state.munro_slider),
+        df["Rating"] >= st.session_state.rating_slider,
+        df["Votes"] >= st.session_state.vote_slider,
+        df["Time"].between(*st.session_state.time_slider),
+        df["Distance"].between(*st.session_state.distance_slider),
+        df["Grade"] <= st.session_state.grade_slider if st.session_state.grade_slider < MAX_VALUES["grade"] else True,
+        df["Bog"] <= st.session_state.bog_slider if st.session_state.bog_slider < MAX_VALUES["bog"] else True,
+        (df["Corbett"].notna() & df["Corbett"] != "") if st.session_state.corbett_check else True,
+        (df["Graham"].notna() & df["Graham"] != "") if st.session_state.graham_check else True,
+        (df["Donald"].notna() & df["Donald"] != "") if st.session_state.donald_check else True,
+        (df["Sub 2000"].notna() & df["Sub 2000"] != "") if st.session_state.sub_2000_check else True
+    ]
     
-    if st.session_state.munro_slider[1] < max_munro_cutoff:
-        df = df.loc[df["Munros Climbed"] <= st.session_state.munro_slider[1]]
+    final_condition = filters[0]
+    for condition in filters[1:]:
+        final_condition &= condition
 
-    if st.session_state.grade_slider < max_grade_cutoff:
-        df = df.loc[df["Grade"] <= st.session_state.grade_slider]
-
-    if st.session_state.bog_slider < max_bog_cutoff:
-        df = df.loc[df["Bog"] <= st.session_state.bog_slider]
-    
-    if st.session_state.time_slider[1] < max_time_cutoff:
-        df = df.loc[df["Time"] <= st.session_state.time_slider[1]]
-
-    # Filter DataFrame based on selected checkboxes
-    if st.session_state.corbett_check and df.shape[0]:
-        df = df[(df['Corbett'].notna()) & (df['Corbett'] != '')]
-
-    if st.session_state.graham_check and df.shape[0]:
-        df = df[(df['Graham'].notna()) & (df['Graham'] != '')]
-
-    if st.session_state.donald_check and df.shape[0]:
-        df = df[(df['Donald'].notna()) & (df['Donald'] != '')]
-
-    if st.session_state.sub_2000_check and df.shape[0]:
-        df = df[(df['Sub 2000'].notna()) & (df['Sub 2000'] != '')]
-
-    return df
+    return df[final_condition]
 
 
-def get_sidebar_filters(df: pd.DataFrame):
+def get_sidebar_filters():
 
     st.sidebar.title("Filters")
-
-    # Dynamic filters
-    if df.shape[0]:
-        max_votes = min(round(int(df["Votes"].max()), -1), max_votes_cutoff)
-    else:
-        max_votes = 1
     
     st.sidebar.slider("Munros Climbed",
                       min_value=0,
-                      max_value=max_munro_cutoff,
-                      value=(0, max_munro_cutoff),
+                      max_value=MAX_VALUES["munro"],
+                      value=(0, MAX_VALUES["munro"]),
                       key="munro_slider")
 
     DirectionalSlider("Difficulty",
                       min_value=0,
-                      max_value=max_grade_cutoff,
+                      max_value=MAX_VALUES["grade"],
                       key="grade_slider",
                       reverse=True)
 
     DirectionalSlider("Bog Factor",
                       min_value=0,
-                      max_value=max_bog_cutoff,
+                      max_value=MAX_VALUES["bog"],
                       key="bog_slider",
                       reverse=True)
 
@@ -116,30 +95,30 @@ def get_sidebar_filters(df: pd.DataFrame):
 
     DirectionalSlider("No. of Votes",
                       min_value=0,
-                      max_value=max(max_votes, 5),
+                      max_value=max(MAX_VALUES["votes"], 5),
                       step=5,
                       key="vote_slider")
 
     st.sidebar.slider("Time (avg hours)",
                       min_value=0.,
-                      max_value=max_time_cutoff,
-                      value=(0., max_time_cutoff),
+                      max_value=MAX_VALUES["time"],
+                      value=(0., MAX_VALUES["time"]),
                       step=0.5,
                       key="time_slider")
 
     st.sidebar.slider("Distance (km)",
                     min_value=0.,
-                    max_value=max_dist,
-                    value=(0., max_dist),
+                    max_value=MAX_VALUES["distance"],
+                    value=(0., MAX_VALUES["distance"]),
                     step=1.,
                     key="distance_slider")
     
     # Checkbox filters
     st.sidebar.title("Quick Summit Filters")
-    st.sidebar.checkbox('Corbett', key="corbett_check")
-    st.sidebar.checkbox('Graham', key="graham_check")
-    st.sidebar.checkbox('Donald', key="donald_check")
-    st.sidebar.checkbox('Sub 2000',key="sub_2000_check")
+    st.sidebar.checkbox("Corbett", key="corbett_check")
+    st.sidebar.checkbox("Graham", key="graham_check")
+    st.sidebar.checkbox("Donald", key="donald_check")
+    st.sidebar.checkbox("Sub 2000",key="sub_2000_check")
 
 
 if __name__ == "__main__":
@@ -148,12 +127,10 @@ if __name__ == "__main__":
 
     df = load_data()
 
-    unique_regions = sorted(df['Region'].unique().tolist())
-    unique_regions.insert(0, 'All')
+    unique_regions = ["All"] + sorted(df["Region"].unique().tolist())
+    st.selectbox("Region", unique_regions, key="region_selector")
 
-    st.selectbox('Region', unique_regions, key="region_selector")
-
-    get_sidebar_filters(df)
+    get_sidebar_filters()
     df = filter_walks(df)
 
     m = leafmap.Map()
