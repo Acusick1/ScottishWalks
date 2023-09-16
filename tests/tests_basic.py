@@ -1,13 +1,13 @@
 import unittest
 import pandas as pd
 import pandas.testing as pdt
-from src import sandbox, data, gpx
+from src import etl, data, gpx
 
 
 class TestSandbox(unittest.TestCase):
 
     def test_main(self):
-        self.assertTrue(isinstance(sandbox.main(), pd.DataFrame))
+        self.assertTrue(isinstance(etl.main(), pd.DataFrame))
 
 
 class TestData(unittest.TestCase):
