@@ -1,5 +1,7 @@
 __pycache__
-**.log
-**.json
 notebooks/.ipynb_checkpoints/
 .idea/
+.vscode/
+*.csv
+*.json
+*.log
