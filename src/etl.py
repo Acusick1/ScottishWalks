@@ -3,7 +3,7 @@ import pandas as pd
 import re
 from OSGridConverter import grid2latlong
 from OSGridConverter.base import OSGridError
-from settings import RAW_DATA_PATH, DATASET_PATH
+from config import settings
 
 
 def capitalize_string(title, exceptions=['and', 'or', 'the', 'on', 'in', 'of', 'to', 'via', 'near', 'by', 'up', 'from']):
@@ -45,7 +45,7 @@ def html_link(x, text="click here"):
 
 
 def main():
-    file_gen = RAW_DATA_PATH.glob("*walks.json")
+    file_gen = settings.raw_data_path.glob("*walks.json")
 
     dfs = []  # an empty list to store the data frames
     for file in file_gen:
@@ -119,8 +119,8 @@ def main():
     df["Start Grid Ref"] = df["Start Grid Ref"].str.upper()
 
     df.reset_index(drop=True, inplace=True)
-    df.to_parquet(DATASET_PATH, index=False)
-    df.to_csv(DATASET_PATH.with_suffix(".csv"), index=False)
+    df.to_parquet(settings.processed_path, index=False)
+    df.to_csv(settings.processed_path.with_suffix(".csv"), index=False)
 
     return df
 
