@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 import leafmap.foliumap as leafmap
 from utils.streamlit import DirectionalSlider
-from settings import DATASET_PATH
+from config import settings
 
 
 # def handle_click(map_handle, data, **kwargs):
@@ -38,7 +38,7 @@ MAX_VALUES = {
 
 @st.cache
 def load_data():
-    return pd.read_parquet(DATASET_PATH)
+    return pd.read_parquet(settings.processed_path)
 
 
 def filter_walks(df: pd.DataFrame):
