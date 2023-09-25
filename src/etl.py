@@ -83,16 +83,16 @@ def main():
     df["Time"].fillna(df["Time (summer conditions)"], inplace=True)
     df.drop(columns="Time (summer conditions)", inplace=True)
 
-    test = df["Time"].str.split("-", expand=True)
-    minute_cells = test.apply(lambda x: x.str.contains("min")).astype(bool)
+    time = df["Time"].str.split("-", expand=True)
+    minute_cells = time.apply(lambda x: x.str.contains("min")).astype(bool)
     minute_cells[0] = minute_cells[0] | minute_cells[1]
 
-    for c in test.columns:
-        test[c] = test[c].str.extract(r"(\d+\.?\d*)").astype(float)
+    for c in time.columns:
+        time[c] = time[c].str.extract(r"(\d+\.?\d*)").astype(float)
 
-    test[minute_cells] = test[minute_cells] / 60
-    test[1].fillna(test[0], inplace=True)
-    df["Time"] = test.mean(axis=1)
+    time[minute_cells] = time[minute_cells] / 60
+    time[1].fillna(time[0], inplace=True)
+    df["Time"] = time.mean(axis=1)
 
     df["Rating"] = df["Rating"].astype(float)
     df["Votes"] = df["Votes"].astype(int)
@@ -117,10 +117,21 @@ def main():
     df = pd.concat([df, coords], axis=1)
     df = df.applymap(format_operations)
     df["Start Grid Ref"] = df["Start Grid Ref"].str.upper()
+    df = df.dropna(subset=["lat", "lon"])
 
     df.reset_index(drop=True, inplace=True)
-    df.to_parquet(settings.processed_path, index=False)
-    df.to_csv(settings.processed_path.with_suffix(".csv"), index=False)
+    df.to_parquet(settings.processed_path)
+    df.to_csv(settings.processed_path.with_suffix(".csv"))
+
+    # Creating df for marker tooltip
+    display_df = df[["lat", "lon", "Name", "Distance", "Time", "Ascent", "Rating", "Link", "GPX"]].copy()
+    display_df["Distance"] = display_df["Distance"].apply(lambda x: f"{x}km")
+    display_df["Ascent"] = display_df["Ascent"].apply(lambda x: f"{x}m")
+    display_df["Rating"] = display_df["Rating"].apply(lambda x: f"{x:.2f}/5")
+    display_df["Time"] = display_df["Time"].apply(lambda x: f"{x:.2f} hours (avg)")
+    
+    display_df.to_parquet(settings.display_path)
+    display_df.to_csv(settings.display_path.with_suffix(".csv"))
 
     return df
 
