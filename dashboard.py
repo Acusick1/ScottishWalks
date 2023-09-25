@@ -38,7 +38,7 @@ MAX_VALUES = {
 
 @st.cache
 def load_data():
-    return pd.read_parquet(settings.processed_path), pd.read_parquet(settings.processed_path.with_stem("display"))
+    return pd.read_parquet(settings.processed_path), pd.read_parquet(settings.display_path)
 
 
 def filter_walks(df: pd.DataFrame):
