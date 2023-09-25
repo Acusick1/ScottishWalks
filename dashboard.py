@@ -52,10 +52,10 @@ def filter_walks(df: pd.DataFrame):
         df["Distance"].between(*st.session_state.distance_slider),
         df["Grade"] <= st.session_state.grade_slider if st.session_state.grade_slider < MAX_VALUES["grade"] else True,
         df["Bog"] <= st.session_state.bog_slider if st.session_state.bog_slider < MAX_VALUES["bog"] else True,
-        (df["Corbett"].notna() & df["Corbett"] != "") if st.session_state.corbett_check else True,
-        (df["Graham"].notna() & df["Graham"] != "") if st.session_state.graham_check else True,
-        (df["Donald"].notna() & df["Donald"] != "") if st.session_state.donald_check else True,
-        (df["Sub 2000"].notna() & df["Sub 2000"] != "") if st.session_state.sub_2000_check else True
+        (df["Corbett"].notna() & (df["Corbett"] != "")) if st.session_state.corbett_check else True,
+        (df["Graham"].notna() & (df["Graham"] != "")) if st.session_state.graham_check else True,
+        (df["Donald"].notna() & (df["Donald"] != "")) if st.session_state.donald_check else True,
+        (df["Sub 2000"].notna() & (df["Sub 2000"] != "")) if st.session_state.sub_2000_check else True
     ]
     
     final_condition = filters[0]
