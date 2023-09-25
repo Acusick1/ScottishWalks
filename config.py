@@ -5,8 +5,10 @@ from dataclasses import dataclass
 class Settings:
 
     root_path = pathlib.Path(__file__).parent
-    processed_path = root_path / "data" / "processed.parquet"
-    raw_data_path = root_path / "data" / "raw"
+    data_path = root_path / "data"
+    processed_path = data_path / "processed.parquet"
+    display_path = data_path / "display.parquet"
+    raw_data_path = data_path / "raw"
 
 
 settings = Settings()

@@ -38,7 +38,7 @@ MAX_VALUES = {
 
 @st.cache
 def load_data():
-    return pd.read_parquet(settings.processed_path)
+    return pd.read_parquet(settings.processed_path), pd.read_parquet(settings.processed_path.with_stem("display"))
 
 
 def filter_walks(df: pd.DataFrame):
@@ -125,7 +125,7 @@ if __name__ == "__main__":
 
     st.write("Scottish Walks")
 
-    df = load_data()
+    df, latlon = load_data()
 
     unique_regions = ["All"] + sorted(df["Region"].unique().tolist())
     st.selectbox("Region", unique_regions, key="region_selector")
@@ -136,13 +136,7 @@ if __name__ == "__main__":
     m = leafmap.Map()
     if df.shape[0]:
 
-        latlon = df[["lat", "lon", "Name", "Distance", "Time", "Ascent", "Rating", "Link", "GPX"]].copy()
-        latlon = latlon.dropna(subset=["lat", "lon"]).reset_index(drop=True)
-
-        latlon["Distance"] = latlon["Distance"].apply(lambda x: f"{x}km")
-        latlon["Ascent"] = latlon["Ascent"].apply(lambda x: f"{x}m")
-        latlon["Rating"] = latlon["Rating"].apply(lambda x: f"{x:.2f}/5")
-        latlon["Time"] = latlon["Time"].apply(lambda x: f"{x:.2f} hours (avg)")
+        latlon = latlon.loc[df.index]
 
         center = (latlon["lat"].mean(), latlon["lon"].mean())
 
