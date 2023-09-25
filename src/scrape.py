@@ -8,12 +8,12 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
-from settings import RAW_DATA_PATH, PROJECT_PATH
+from config import settings
 
 BASE_URL = "https://www.walkhighlands.co.uk"
 AREA_LINKS = {}
 WALK_LINKS = set()
-AREA_LINKS_FILE = PROJECT_PATH / "arealinks.json"
+AREA_LINKS_FILE = settings.root_path / "arealinks.json"
 DELAY = 0.5
 
 
@@ -163,7 +163,7 @@ def search_areas(driver):
                 if walk_data is not None:
                     walks.append(walk_data)
 
-        with open(f"{RAW_DATA_PATH}{os.sep}{name}walks.json", 'w') as fout:
+        with open(f"{settings.raw_data_path}{os.sep}{name}walks.json", 'w') as fout:
             json.dump(walks, fout)
 
 
@@ -181,7 +181,7 @@ def main():
     nav_bar = WebDriverWait(driver, 10).until(lambda d: d.find_element(by=By.ID, value="nav"))
     lists = nav_bar.find_element(by=By.TAG_NAME, value="li")
 
-    area_links_path = PROJECT_PATH / AREA_LINKS_FILE
+    area_links_path = settings.root_path / AREA_LINKS_FILE
     if area_links_path.is_file():
         with open(area_links_path, 'r') as fin:
             AREA_LINKS.update(json.load(fin))

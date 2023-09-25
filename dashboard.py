@@ -2,7 +2,7 @@ import pandas as pd
 import streamlit as st
 import leafmap.foliumap as leafmap
 from utils.streamlit import DirectionalSlider
-from settings import DATASET_PATH
+from config import settings
 
 
 # def handle_click(map_handle, data, **kwargs):
@@ -38,7 +38,7 @@ MAX_VALUES = {
 
 @st.cache
 def load_data():
-    return pd.read_parquet(DATASET_PATH)
+    return pd.read_parquet(settings.processed_path), pd.read_parquet(settings.display_path)
 
 
 def filter_walks(df: pd.DataFrame):
@@ -52,10 +52,10 @@ def filter_walks(df: pd.DataFrame):
         df["Distance"].between(*st.session_state.distance_slider),
         df["Grade"] <= st.session_state.grade_slider if st.session_state.grade_slider < MAX_VALUES["grade"] else True,
         df["Bog"] <= st.session_state.bog_slider if st.session_state.bog_slider < MAX_VALUES["bog"] else True,
-        (df["Corbett"].notna() & df["Corbett"] != "") if st.session_state.corbett_check else True,
-        (df["Graham"].notna() & df["Graham"] != "") if st.session_state.graham_check else True,
-        (df["Donald"].notna() & df["Donald"] != "") if st.session_state.donald_check else True,
-        (df["Sub 2000"].notna() & df["Sub 2000"] != "") if st.session_state.sub_2000_check else True
+        (df["Corbett"].notna() & (df["Corbett"] != "")) if st.session_state.corbett_check else True,
+        (df["Graham"].notna() & (df["Graham"] != "")) if st.session_state.graham_check else True,
+        (df["Donald"].notna() & (df["Donald"] != "")) if st.session_state.donald_check else True,
+        (df["Sub 2000"].notna() & (df["Sub 2000"] != "")) if st.session_state.sub_2000_check else True
     ]
     
     final_condition = filters[0]
@@ -125,7 +125,7 @@ if __name__ == "__main__":
 
     st.write("Scottish Walks")
 
-    df = load_data()
+    df, latlon = load_data()
 
     unique_regions = ["All"] + sorted(df["Region"].unique().tolist())
     st.selectbox("Region", unique_regions, key="region_selector")
@@ -136,13 +136,7 @@ if __name__ == "__main__":
     m = leafmap.Map()
     if df.shape[0]:
 
-        latlon = df[["lat", "lon", "Name", "Distance", "Time", "Ascent", "Rating", "Link", "GPX"]].copy()
-        latlon = latlon.dropna(subset=["lat", "lon"]).reset_index(drop=True)
-
-        latlon["Distance"] = latlon["Distance"].apply(lambda x: f"{x}km")
-        latlon["Ascent"] = latlon["Ascent"].apply(lambda x: f"{x}m")
-        latlon["Rating"] = latlon["Rating"].apply(lambda x: f"{x:.2f}/5")
-        latlon["Time"] = latlon["Time"].apply(lambda x: f"{x:.2f} hours (avg)")
+        latlon = latlon.loc[df.index]
 
         center = (latlon["lat"].mean(), latlon["lon"].mean())
 
