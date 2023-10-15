@@ -68,7 +68,7 @@ def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
 def filter_walks(df: pd.DataFrame):
 
     filters = [
-        (df["Region"] == st.session_state.region_selector) if st.session_state.region_selector != "All" else True,
+        (df["Region"] == st.session_state.region_selector) if st.session_state.region_selector.lower() != "all" else True,
         df["Munros Climbed"].between(*st.session_state.munro_slider),
         df["Rating"] >= st.session_state.rating_slider,
         df["Votes"] >= st.session_state.vote_slider,
@@ -154,6 +154,9 @@ if __name__ == "__main__":
     unique_regions = ["All"] + sorted(df["Region"].unique().tolist())
     st.selectbox("Region", unique_regions, key="region_selector")
 
+    if "zoom" not in st.session_state or st.session_state.region_selector.lower() == "all":
+        st.session_state["zoom"] = zoom_start
+
     get_sidebar_filters()
     df = filter_walks(df)
 
@@ -163,8 +166,11 @@ if __name__ == "__main__":
     if df.shape[0]:
 
         latlon = latlon.loc[df.index]
-        center = (latlon["lat"].mean(), latlon["lon"].mean())
-        marker_cluster = fg.add_child(FastMarkerCluster(latlon[['lat', 'lon', 'Popup']].values.tolist(), callback=popup_callback))
+        st.session_state["center"] = (latlon["lat"].mean(), latlon["lon"].mean())
+        marker_cluster = fg.add_child(FastMarkerCluster(latlon[["lat", "lon", "Popup"]].values.tolist(), callback=popup_callback))
+    else:
+        st.session_state["center"] = center_start
+        st.session_state["zoom"] = zoom_start
 
     df = df[["Name", "Region", "Distance", "Ascent", "Time", "Start Grid Ref", "Rating", "Votes", "Grade", "Bog", "Munros Climbed", "Munro", "Corbett", "Graham", "Donald", "Sub 2000"]]
     df = df.rename(columns={"Distance": "Distance (km)", "Ascent": "Ascent (m)", "Time": "Time (avg hrs)"})
@@ -173,8 +179,8 @@ if __name__ == "__main__":
     st_folium(
         m, 
         feature_group_to_add=fg, 
-        center=center, 
-        zoom=zoom_start, 
+        center=st.session_state["center"], 
+        zoom=st.session_state["zoom"], 
         width=map_width,
         height=map_height
     )
