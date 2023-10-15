@@ -24,12 +24,12 @@ def get_walk_data(driver, walk_link):
     driver.get(walk_link)
 
     try:
-        test = driver.find_element(by=By.ID, value="col")
+        column = driver.find_element(by=By.ID, value="col")
     except NoSuchElementException:
         return None
 
-    key = test.find_elements(by=By.CSS_SELECTOR, value="dt")
-    val = test.find_elements(by=By.CSS_SELECTOR, value="dd")
+    key = column.find_elements(by=By.CSS_SELECTOR, value="dt")
+    val = column.find_elements(by=By.CSS_SELECTOR, value="dd")
 
     data = {}
     for k, v in zip(key, val):
@@ -38,40 +38,38 @@ def get_walk_data(driver, walk_link):
         else:
             data[k.text] = v.text
 
-    test = driver.find_element(by=By.ID, value="wrapper")
-    name = test.find_element(by=By.CSS_SELECTOR, value="h1")
-    votes = test.find_element(by=By.CLASS_NAME, value="votes")
-    vote_value = votes.find_element(by=By.XPATH, value='//span[@itemprop="ratingValue"]').get_attribute("innerHTML")
-    vote_count = votes.find_element(by=By.XPATH, value='//span[@itemprop="ratingCount"]').get_attribute("innerHTML")
+    wrapper = driver.find_element(by=By.ID, value="wrapper")
+    name = wrapper.find_element(by=By.CSS_SELECTOR, value="h1")
+    votes = wrapper.find_element(by=By.CLASS_NAME, value="votes")
+    vote_value = votes.find_elements(by=By.CSS_SELECTOR, value="span")[0].get_attribute("innerHTML")
+    vote_count = votes.find_elements(by=By.CSS_SELECTOR, value="span")[-1].get_attribute("innerHTML")
 
-    grade = test.find_element(by=By.CLASS_NAME, value="grade")
+    grade = wrapper.find_element(by=By.CLASS_NAME, value="grade")
     grade = len(grade.find_elements(by=By.CSS_SELECTOR, value="img"))
 
-    bog = test.find_element(by=By.CLASS_NAME, value="bog")
+    bog = wrapper.find_element(by=By.CLASS_NAME, value="bog")
     bog = len(bog.find_elements(by=By.CSS_SELECTOR, value="img"))
 
-    # TODO: Untest code
-    # Find all links
-    # all_links = driver.find_elements_by_tag_name('a')
-
     # Loop through all found links to find Google Maps link
-    # start_point_url = None
-    # for link in all_links:
-    #     start_point_url = link.get_attribute('href')
-    #     if 'www.google.com/maps' in start_point_url:
-    #         break
+    all_links = wrapper.find_elements(by=By.TAG_NAME, value="a")
 
-    # print(f"URL: {start_point_url}")
+    start_point_url = None
+    for link in all_links:
+        start_point_url = link.get_attribute('href')
+        if 'www.google.com/maps' in start_point_url:
+            break
+
+    print(f"URL: {start_point_url}")
 
     data = data | location
 
-    data['Name'] = name.text
-    data['Rating'] = vote_value
-    data['Votes'] = vote_count
-    data['Grade'] = grade
-    data['Bog'] = bog
+    data["Name"] = name.text
+    data["Rating"] = vote_value
+    data["Votes"] = vote_count
+    data["Grade"] = grade
+    data["Bog"] = bog
     data["Link"] = walk_link
-    # data["Start Point"] = start_point_url
+    data["StartPoint"] = start_point_url
     data["GPX"] = get_route_link(driver)
 
     return data
