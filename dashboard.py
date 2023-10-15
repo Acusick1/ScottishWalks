@@ -1,9 +1,33 @@
+import folium
 import pandas as pd
 import streamlit as st
-import leafmap.foliumap as leafmap
+from folium.plugins import FastMarkerCluster
+from streamlit_folium import st_folium
 from utils.streamlit import DirectionalSlider
 from config import settings
 
+map_width, map_height = 700, 700
+zoom_start = 6.25
+center_start = (56.5, 355.5)
+
+popup_callback = (
+    """
+    function (row) {
+        var marker = L.marker(new L.LatLng(row[0], row[1]), {color: "red"});
+        var icon = L.AwesomeMarkers.icon({
+            icon: 'info-sign',
+            iconColor: 'white',
+            markerColor: 'green',
+            prefix: 'glyphicon',
+            extraClasses: 'fa-rotate-0'
+        });
+        marker.setIcon(icon);
+        var popupContent = `<div class='display_text' style='width: 100%; height: 100%;'>${row[2]}</div>`;
+        marker.bindPopup(popupContent, {maxWidth: '300'});
+        return marker;
+    };
+    """
+)
 
 # def handle_click(map_handle, data, **kwargs):
 #     route = gpx.parse(data["GPX"])
@@ -133,36 +157,27 @@ if __name__ == "__main__":
     get_sidebar_filters()
     df = filter_walks(df)
 
-    m = leafmap.Map()
+    m = folium.Map(center=center_start)
+    fg = folium.FeatureGroup(name="walks")
+
     if df.shape[0]:
 
         latlon = latlon.loc[df.index]
-
         center = (latlon["lat"].mean(), latlon["lon"].mean())
+        marker_cluster = fg.add_child(FastMarkerCluster(latlon[['lat', 'lon', 'Popup']].values.tolist(), callback=popup_callback))
 
-        # for _, p in filtered_df.iterrows():
-        #     mark = Marker(location=(p["lat"], p["lon"]), draggable=False, title=p["Name"])
-        #     mark.on_click(functools.partial(handle_click, m, p))
-        #     markers.append(mark)
-
-        # marker_cluster = MarkerCluster(markers=markers)
-        # m.add_layer(marker_cluster)
-
-        m.add_points_from_xy(latlon, x="lon", y="lat", popup=latlon.columns[2:])
-
-        padding = 0.05
-        min_bounds = (latlon["lat"].min() - padding, latlon["lon"].min() - padding)
-        max_bounds = (latlon["lat"].max() + padding, latlon["lon"].max() + padding)
-
-        m.fit_bounds([min_bounds, max_bounds])
-    else:
-        m.set_center(lat=56.5, lon=355.5, zoom=6.25)
-
-    display_df = df.copy()
-    display_df = display_df[["Name", "Region", "Distance", "Ascent", "Time", "Start Grid Ref", "Rating", "Votes", "Grade", "Bog", "Munros Climbed", "Munro", "Corbett", "Graham", "Donald", "Sub 2000"]]
-    display_df = display_df.rename(columns={"Distance": "Distance (km)", "Ascent": "Ascent (m)", "Time": "Time (avg hrs)"})
+    df = df[["Name", "Region", "Distance", "Ascent", "Time", "Start Grid Ref", "Rating", "Votes", "Grade", "Bog", "Munros Climbed", "Munro", "Corbett", "Graham", "Donald", "Sub 2000"]]
+    df = df.rename(columns={"Distance": "Distance (km)", "Ascent": "Ascent (m)", "Time": "Time (avg hrs)"})
 
     # Display
-    m.to_streamlit()
-    st.write(f"Total Walks: {display_df.shape[0]}")
-    st.dataframe(display_df)
+    st_folium(
+        m, 
+        feature_group_to_add=fg, 
+        center=center, 
+        zoom=zoom_start, 
+        width=map_width,
+        height=map_height
+    )
+
+    st.write(f"Total Walks: {df.shape[0]}")
+    st.dataframe(df)

@@ -44,6 +44,10 @@ def html_link(x, text="click here"):
     return f'<a href="{x}" target="blank">{text}</a>'
 
 
+def series_to_html(row: pd.Series):
+    return "".join(["<b>" + c + "</b>" + ": " + str(row[c]) + "<br>" for c in row.index])
+
+
 def main():
     file_gen = settings.raw_data_path.glob("*walks.json")
 
@@ -56,7 +60,7 @@ def main():
     df = pd.concat(dfs, ignore_index=True)  # concatenate all the data frames in the list.
 
     # Data cleaning
-    df = df.rename(columns={"Region": "Region", "Subregion": "Subregion"})
+    df = df.rename(columns={"Area0": "Region", "Area1": "Subregion", "StartPoint": "Start Point"})
 
     for col in df.columns:
         # Combining plural columns
@@ -80,8 +84,10 @@ def main():
 
     # Kilometers
     df["Distance"] = df["Distance"].str.extract(r"^([0-9\.]*)").astype(float)
-    df["Time"].fillna(df["Time (summer conditions)"], inplace=True)
-    df.drop(columns="Time (summer conditions)", inplace=True)
+    
+    # Does not seem to be used anymore
+    # df["Time"].fillna(df["Time (summer conditions)"], inplace=True)
+    # df.drop(columns="Time (summer conditions)", inplace=True)
 
     time = df["Time"].str.split("-", expand=True)
     minute_cells = time.apply(lambda x: x.str.contains("min")).astype(bool)
@@ -98,6 +104,7 @@ def main():
     df["Votes"] = df["Votes"].astype(int)
     df["Ascent"] = df["Ascent"].str.extract(r"(\d+\.?\d*)").astype(int)
     df["Link"] = df["Link"].apply(lambda x: html_link(x))
+    df["Start Point"] = df["Start Point"].apply(lambda x: html_link(x))
     df["GPX"] = df["GPX"].apply(lambda x: html_link(x, text="download"))
 
     coords = {"lat": [], "lon": []}
@@ -124,12 +131,14 @@ def main():
     df.to_csv(settings.processed_path.with_suffix(".csv"))
 
     # Creating df for marker tooltip
-    display_df = df[["lat", "lon", "Name", "Distance", "Time", "Ascent", "Rating", "Link", "GPX"]].copy()
+    display_df = df[["lat", "lon", "Name", "Distance", "Time", "Ascent", "Rating", "Link", "Start Point", "GPX"]].copy()
     display_df["Distance"] = display_df["Distance"].apply(lambda x: f"{x}km")
     display_df["Ascent"] = display_df["Ascent"].apply(lambda x: f"{x}m")
     display_df["Rating"] = display_df["Rating"].apply(lambda x: f"{x:.2f}/5")
     display_df["Time"] = display_df["Time"].apply(lambda x: f"{x:.2f} hours (avg)")
     
+    display_df["Popup"] = display_df[display_df.columns[2:]].apply(series_to_html, axis=1)
+
     display_df.to_parquet(settings.display_path)
     display_df.to_csv(settings.display_path.with_suffix(".csv"))
 
