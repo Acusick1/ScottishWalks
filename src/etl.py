@@ -6,14 +6,14 @@ from OSGridConverter.base import OSGridError
 from config import settings
 
 
-def capitalize_string(title, exceptions=['and', 'or', 'the', 'on', 'in', 'of', 'to', 'via', 'near', 'by', 'up', 'from']):
+def capitalize_string(string: str, exceptions: list[str] = ['and', 'or', 'the', 'on', 'in', 'of', 'to', 'via', 'near', 'by', 'up', 'from']) -> str:
     # This regular expression captures words and their trailing punctuation
     pattern = r"([\w-]+['\w-]*[\.,!?:;]*)(\s*)"
     
     capitalized_words = []
     
     # Use findall to get a list of tuples where each tuple contains (word, space)
-    for word, space in re.findall(pattern, title):
+    for word, space in re.findall(pattern, string):
         
         # Capitalize the first word regardless of its presence in the exceptions list
         if not capitalized_words:
@@ -40,11 +40,11 @@ def format_operations(element):
         return element
     
 
-def html_link(x, text="click here"):
-    return f'<a href="{x}" target="blank">{text}</a>'
+def html_link(link: str, text="click here") -> str:
+    return f'<a href="{link}" target="blank">{text}</a>'
 
 
-def series_to_html(row: pd.Series):
+def series_to_html(row: pd.Series) -> str:
     return "".join(["<b>" + c + "</b>" + ": " + str(row[c]) + "<br>" for c in row.index])
 
 

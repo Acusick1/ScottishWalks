@@ -1,9 +1,9 @@
 import json
+import pandas as pd
 import time
 import re
 import os
-import platform
-from typing import Iterable, List
+from typing import Iterable
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -17,7 +17,7 @@ AREA_LINKS_FILE = settings.root_path / "arealinks.json"
 DELAY = 0.5
 
 
-def get_walk_data(driver, walk_link):
+def get_walk_data(driver, walk_link: str) -> pd.DataFrame:
 
     location = get_area_from_link(walk_link)
 
@@ -75,7 +75,7 @@ def get_walk_data(driver, walk_link):
     return data
 
 
-def get_route_link(driver):
+def get_route_link(driver) -> str:
 
     hrefs = driver.find_element(by=By.CSS_SELECTOR, value="ul.box").find_elements(by=By.TAG_NAME, value="a")
 
@@ -96,17 +96,17 @@ def get_route_link(driver):
         Exception("GPX link not found")
 
 
-def get_unique_links(element):
+def get_unique_links(element) -> set[str]:
 
     return {link.get_attribute("href") for link in element.find_elements(by=By.TAG_NAME, value="a")}
 
 
-def get_links(element):
+def get_links(element) -> set[str]:
 
     return [link.get_attribute("href") for link in element.find_elements(by=By.TAG_NAME, value="a")]
 
 
-def link_filter(links: Iterable[str]) -> List[str]:
+def link_filter(links: Iterable[str]) -> list[str]:
 
     return [link for link in links if link is not None and not link.endswith('#') and not link.endswith('php')]
 
@@ -123,7 +123,7 @@ def get_area_from_link(link: str) -> dict:
     return {f"Area{i}": area for i, area in enumerate(split)}
 
 
-def recursive(driver, hrefs):
+def recursive(driver, hrefs: Iterable[str]) -> None:
 
     for h in hrefs:
         driver.get(h)
@@ -167,12 +167,11 @@ def search_areas(driver):
 
 def main():
 
-    if platform.system() == "Windows":
-        driver = webdriver.Chrome()
-    elif platform.system() == "Linux":
+    try:
         driver = webdriver.Firefox()
-    else:
-        Exception(f"No webdriver setup for {platform.system()} system")
+    except Exception as e:
+        print("Firefox webdriver failed, trying Chrome ...")
+        driver = webdriver.Chrome()
 
     driver.get(BASE_URL)
 

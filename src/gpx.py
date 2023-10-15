@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 from src import data
 
 
-def parse(link: str):
+def parse(link: str) -> pd.DataFrame:
 
     response = requests.get(link)
     soup = BeautifulSoup(response.text, "xml")

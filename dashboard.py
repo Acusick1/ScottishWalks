@@ -65,7 +65,7 @@ def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     return pd.read_parquet(settings.processed_path), pd.read_parquet(settings.display_path)
 
 
-def filter_walks(df: pd.DataFrame):
+def filter_walks(df: pd.DataFrame) -> pd.DataFrame:
 
     filters = [
         (df["Region"] == st.session_state.region_selector) if st.session_state.region_selector.lower() != "all" else True,
@@ -89,7 +89,7 @@ def filter_walks(df: pd.DataFrame):
     return df[final_condition]
 
 
-def get_sidebar_filters():
+def get_sidebar_filters() -> None:
 
     st.sidebar.title("Filters")
     
@@ -169,6 +169,7 @@ if __name__ == "__main__":
         st.session_state["center"] = (latlon["lat"].mean(), latlon["lon"].mean())
         marker_cluster = fg.add_child(FastMarkerCluster(latlon[["lat", "lon", "Popup"]].values.tolist(), callback=popup_callback))
     else:
+        st.write("No walks found!")
         st.session_state["center"] = center_start
         st.session_state["zoom"] = zoom_start
 

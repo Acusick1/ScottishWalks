@@ -3,7 +3,7 @@ import pandas as pd
 from config import settings
 
 
-def load_walk_data():
+def load_walk_data() -> pd.DataFrame:
     file_gen = settings.raw_data_path.glob("*walks.json")
 
     dfs = []  # an empty list to store the data frames
