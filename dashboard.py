@@ -60,8 +60,8 @@ MAX_VALUES = {
 }
 
 
-@st.cache
-def load_data():
+@st.cache_data
+def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
     return pd.read_parquet(settings.processed_path), pd.read_parquet(settings.display_path)
 
 

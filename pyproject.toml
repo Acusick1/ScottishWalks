@@ -5,7 +5,7 @@ description = ""
 authors = ["Acusick1 <andrewcusick13@outlook.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.9.8"
 pandas = "^1.4.2"
 ipyleaflet = "^0.16.0"
 OSGridConverter = "^0.1.3"
