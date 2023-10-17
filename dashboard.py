@@ -10,7 +10,7 @@ map_width, map_height = 700, 700
 zoom_start = 6.25
 center_start = (56.5, 355.5)
 
-popup_callback = (
+marker_callback = (
     """
     function (row) {
         var marker = L.marker(new L.LatLng(row[0], row[1]), {color: "red"});
@@ -24,29 +24,28 @@ popup_callback = (
         marker.setIcon(icon);
         var popupContent = `<div class='display_text' style='width: 100%; height: 100%;'>${row[2]}</div>`;
         marker.bindPopup(popupContent, {maxWidth: '300'});
+
+        marker.on('click', function() {
+            if (window.lastClickedMarker == marker) {
+                if (window.lastPath) {
+                    window.lastPath.remove();
+                    window.lastPath = null;
+                }
+                window.lastClickedMarker = null;
+            } else {
+                if (window.lastPath) {
+                    window.lastPath.remove();
+                }
+                var path = row[3];
+                window.lastPath = L.polyline.antPath(path, {color: 'blue', delay: 1500, weight: 5}).addTo(map);
+                window.lastClickedMarker = marker;
+            }
+        });
+
         return marker;
     };
     """
 )
-
-# def handle_click(map_handle, data, **kwargs):
-#     route = gpx.parse(data["GPX"])
-#     route = gpx.positive_long(route)
-#     latlon = list(zip(route.lat, route.lon))
-#     path = AntPath(locations=latlon)
-
-#     # try:
-#     #    map_handle.substitute_layer(handle_click.current, path)
-#     # except (AttributeError, LayerException):
-#     map_handle.add_layer(path)
-
-#     handle_click.current = path
-
-#     map_handle.center = kwargs["coordinates"]
-#     map_handle.zoom = 11
-#     # map_handle.fit_bounds = get_lat_lon_bounds(route)
-
-#     display(data)
 
 
 # Static filters
@@ -62,7 +61,8 @@ MAX_VALUES = {
 
 @st.cache_data
 def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
-    return pd.read_parquet(settings.processed_path), pd.read_parquet(settings.display_path)
+    
+    return pd.read_parquet(settings.processed_gpx_path, engine="fastparquet")
 
 
 def filter_walks(df: pd.DataFrame) -> pd.DataFrame:
@@ -149,7 +149,7 @@ if __name__ == "__main__":
 
     st.write("Scottish Walks")
 
-    df, latlon = load_data()
+    df = load_data()
 
     unique_regions = ["All"] + sorted(df["Region"].unique().tolist())
     st.selectbox("Region", unique_regions, key="region_selector")
@@ -163,12 +163,15 @@ if __name__ == "__main__":
     m = folium.Map(center=center_start)
     fg = folium.FeatureGroup(name="walks")
 
-    if df.shape[0]:
+    if "marker_cluster" not in st.session_state or set(df.index) != set(st.session_state["displayed_walks"]):
 
-        latlon = latlon.loc[df.index]
-        st.session_state["center"] = (latlon["lat"].mean(), latlon["lon"].mean())
-        marker_cluster = fg.add_child(FastMarkerCluster(latlon[["lat", "lon", "Popup"]].values.tolist(), callback=popup_callback))
-    else:
+        marker_cluster = fg.add_child(FastMarkerCluster(df[["lat", "lon", "Popup", "path"]].values.tolist(), callback=marker_callback))
+        st.session_state["displayed_walks"] = df.index
+        st.session_state["marker_cluster"] = fg
+        st.session_state["center"] = (df["lat"].mean(), df["lon"].mean())
+
+    if not df.shape[0]:
+
         st.write("No walks found!")
         st.session_state["center"] = center_start
         st.session_state["zoom"] = zoom_start
@@ -179,7 +182,7 @@ if __name__ == "__main__":
     # Display
     st_folium(
         m, 
-        feature_group_to_add=fg, 
+        feature_group_to_add=st.session_state["marker_cluster"], 
         center=st.session_state["center"], 
         zoom=st.session_state["zoom"], 
         width=map_width,

@@ -68,7 +68,7 @@ def main():
             df[col] = df[col].fillna(df[col + 's'])
             df = df.drop(columns=col + 's')
 
-    hill_names = ["munro", "corbett", "donald", "graham", "sub 2000"]
+    hill_names = ["munro", "corbett", "donald", "graham", "fiona", "sub 2000"]
 
     for hill_name in hill_names:
         
@@ -125,22 +125,19 @@ def main():
     df = df.applymap(format_operations)
     df["Start Grid Ref"] = df["Start Grid Ref"].str.upper()
     df = df.dropna(subset=["lat", "lon"])
-
     df.reset_index(drop=True, inplace=True)
-    df.to_parquet(settings.processed_path)
-    df.to_csv(settings.processed_path.with_suffix(".csv"))
 
     # Creating df for marker tooltip
-    display_df = df[["lat", "lon", "Name", "Distance", "Time", "Ascent", "Rating", "Link", "Start Point", "GPX"]].copy()
-    display_df["Distance"] = display_df["Distance"].apply(lambda x: f"{x}km")
-    display_df["Ascent"] = display_df["Ascent"].apply(lambda x: f"{x}m")
-    display_df["Rating"] = display_df["Rating"].apply(lambda x: f"{x:.2f}/5")
-    display_df["Time"] = display_df["Time"].apply(lambda x: f"{x:.2f} hours (avg)")
+    popup_df = df[["Name", "Distance", "Time", "Ascent", "Rating", "Link", "Start Point", "GPX"]].copy()
+    popup_df["Distance"] = popup_df["Distance"].apply(lambda x: f"{x}km")
+    popup_df["Ascent"] = popup_df["Ascent"].apply(lambda x: f"{x}m")
+    popup_df["Rating"] = popup_df["Rating"].apply(lambda x: f"{x:.2f}/5")
+    popup_df["Time"] = popup_df["Time"].apply(lambda x: f"{x:.2f} hours (avg)")
     
-    display_df["Popup"] = display_df[display_df.columns[2:]].apply(series_to_html, axis=1)
+    df["Popup"] = popup_df.apply(series_to_html, axis=1)
 
-    display_df.to_parquet(settings.display_path)
-    display_df.to_csv(settings.display_path.with_suffix(".csv"))
+    df.to_parquet(settings.processed_path)
+    df.to_csv(settings.processed_path.with_suffix(".csv"))
 
     return df
 
