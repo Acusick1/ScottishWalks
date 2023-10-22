@@ -9,8 +9,29 @@ from config import settings
 map_width, map_height = 700, 700
 zoom_start = 6.25
 center_start = (56.5, 355.5)
+auto_include_routes = 500
 
 marker_callback = (
+    """
+    function (row) {
+        var marker = L.marker(new L.LatLng(row[0], row[1]), {color: "red"});
+        var icon = L.AwesomeMarkers.icon({
+            icon: 'info-sign',
+            iconColor: 'white',
+            markerColor: 'green',
+            prefix: 'glyphicon',
+            extraClasses: 'fa-rotate-0'
+        });
+        marker.setIcon(icon);
+        var popupContent = `<div class='display_text' style='width: 100%; height: 100%;'>${row[2]}</div>`;
+        marker.bindPopup(popupContent, {maxWidth: '300'});
+
+        return marker;
+    };
+    """
+)
+
+marker_route_callback = (
     """
     function (row) {
         var marker = L.marker(new L.LatLng(row[0], row[1]), {color: "red"});
@@ -60,9 +81,12 @@ MAX_VALUES = {
 
 
 @st.cache_data
-def load_data() -> tuple[pd.DataFrame, pd.DataFrame]:
+def load_data(include_routes: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]:
     
-    return pd.read_parquet(settings.processed_gpx_path, engine="fastparquet")
+    if include_routes:
+        return pd.read_parquet(settings.processed_gpx_path, engine="fastparquet")
+    else:
+        return pd.read_parquet(settings.processed_path, engine="fastparquet")
 
 
 def filter_walks(df: pd.DataFrame) -> pd.DataFrame:
@@ -147,9 +171,20 @@ def get_sidebar_filters() -> None:
 
 if __name__ == "__main__":
 
-    st.write("Scottish Walks")
-
-    df = load_data()
+    st.title("Scottish Walks")
+    st.write("Search for stunning walks in Scotland!")
+    st.write("On mobile, click the top left arrow to see the available filters.")
+    st.write("Walks can also be viewed and sorted in the table below the map.")
+    
+    st.write(
+        "The below checkbox enables walking routes to be visualised when a walk is clicked, \
+        but slows the app down when there are a large number of walks on the map (automatically turned on for less than 500 walks)."
+    )
+    
+    include_routes = "routes_check" in st.session_state and "num_walks" in st.session_state and st.session_state["num_walks"] < auto_include_routes
+    st.checkbox("View routes", key="routes_check", value=include_routes)
+    
+    df = load_data(include_routes=st.session_state["routes_check"])
 
     unique_regions = ["All"] + sorted(df["Region"].unique().tolist())
     st.selectbox("Region", unique_regions, key="region_selector")
@@ -163,18 +198,26 @@ if __name__ == "__main__":
     m = folium.Map(center=center_start)
     fg = folium.FeatureGroup(name="walks")
 
-    if "marker_cluster" not in st.session_state or set(df.index) != set(st.session_state["displayed_walks"]):
+    if "marker_cluster" not in st.session_state or set(df.index) != set(st.session_state["displayed_walks"]) or st.session_state["routes_displayed"] != st.session_state["routes_check"]:
+        
+        if st.session_state["routes_check"]:
+        
+            marker_cluster = fg.add_child(FastMarkerCluster(df[["lat", "lon", "Popup", "path"]].values.tolist(), callback=marker_route_callback))
+        else:
+            marker_cluster = fg.add_child(FastMarkerCluster(df[["lat", "lon", "Popup"]].values.tolist(), callback=marker_callback))
 
-        marker_cluster = fg.add_child(FastMarkerCluster(df[["lat", "lon", "Popup", "path"]].values.tolist(), callback=marker_callback))
+        st.session_state["routes_displayed"] = st.session_state["routes_check"]
         st.session_state["displayed_walks"] = df.index
         st.session_state["marker_cluster"] = fg
         st.session_state["center"] = (df["lat"].mean(), df["lon"].mean())
+        st.session_state["num_walks"] = df.shape[0]
 
     if not df.shape[0]:
-
+        # TODO: No walks found! Reset filters? [reset button]
         st.write("No walks found!")
         st.session_state["center"] = center_start
         st.session_state["zoom"] = zoom_start
+        st.session_state["num_walks"] = 0
 
     df = df[["Name", "Region", "Distance", "Ascent", "Time", "Start Grid Ref", "Rating", "Votes", "Grade", "Bog", "Munros Climbed", "Munro", "Corbett", "Graham", "Donald", "Sub 2000"]]
     df = df.rename(columns={"Distance": "Distance (km)", "Ascent": "Ascent (m)", "Time": "Time (avg hrs)"})
