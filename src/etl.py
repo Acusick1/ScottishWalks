@@ -68,7 +68,7 @@ def main():
             df[col] = df[col].fillna(df[col + 's'])
             df = df.drop(columns=col + 's')
 
-    hill_names = ["munro", "corbett", "donald", "graham", "fiona", "sub 2000"]
+    hill_names = ["munro", "corbett", "donald", "fiona", "sub 2000"]
 
     for hill_name in hill_names:
         
