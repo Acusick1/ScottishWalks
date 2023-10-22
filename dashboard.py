@@ -187,6 +187,7 @@ if __name__ == "__main__":
         """
         Search for stunning walks in Scotland!\n 
         Use the map to search for walks and use the filters to narrow your search. Walks can also be viewed and sorted in the table below the map.\n
+        The walk information provided comes from the wonderful [walkhighlands.co.uk](https://www.walkhighlands.co.uk).
         """
     )
     st.markdown("##### View GPS paths")
