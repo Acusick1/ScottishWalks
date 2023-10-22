@@ -101,11 +101,14 @@ def filter_walks(df: pd.DataFrame) -> pd.DataFrame:
 
     filters = [
         (df["Region"] == st.session_state.region_selector) if st.session_state.region_selector.lower() != "all" else True,
-        df["Munros Climbed"].between(*st.session_state.munro_slider),
+        df["Munros Climbed"] >= st.session_state.munro_slider[0],
+        df["Munros Climbed"] <= st.session_state.munro_slider[1] if st.session_state.munro_slider[1] < MAX_VALUES["munro"] else True,
         df["Rating"] >= st.session_state.rating_slider,
         df["Votes"] >= st.session_state.vote_slider,
-        df["Time"].between(*st.session_state.time_slider),
-        df["Distance"].between(*st.session_state.distance_slider),
+        df["Time"] >= st.session_state.time_slider[0],
+        df["Time"] <= st.session_state.time_slider[1] if st.session_state.time_slider[1] < MAX_VALUES["time"] else True,
+        df["Distance"] >= st.session_state.distance_slider[0],
+        df["Distance"] <= st.session_state.distance_slider[1] if st.session_state.distance_slider[1] < MAX_VALUES["distance"] else True,
         df["Grade"] <= st.session_state.grade_slider if st.session_state.grade_slider < MAX_VALUES["grade"] else True,
         df["Bog"] <= st.session_state.bog_slider if st.session_state.bog_slider < MAX_VALUES["bog"] else True,
         (df["Corbett"].notna() & (df["Corbett"] != "")) if st.session_state.corbett_check else True,

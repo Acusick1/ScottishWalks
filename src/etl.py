@@ -100,6 +100,7 @@ def main():
     time[1].fillna(time[0], inplace=True)
     df["Time"] = time.mean(axis=1)
 
+    df["Start Grid Ref"] = df["Start Grid Ref"].str.replace(" ", "")
     df["Rating"] = df["Rating"].astype(float)
     df["Votes"] = df["Votes"].astype(int)
     df["Ascent"] = df["Ascent"].str.extract(r"(\d+\.?\d*)").astype(int)
