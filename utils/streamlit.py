@@ -14,7 +14,7 @@ class DirectionalSlider:
                  max_value: Union[int, float],
                  key: str,
                  reverse: bool = False,
-                 sidebar: bool = True,
+                 sidebar: bool = False,
                  **kwargs):
 
         """Abstraction layer for st.slider, sets slider initial value based on whether slider values are omitted in an
