@@ -68,15 +68,6 @@ marker_route_callback = (
     """
 )
 
-# Injecting CSS to increase the width of the main block
-st.markdown("""
-    <style>
-    [data-testid="block-container"]{
-        min-width: 950px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
 # Static filters
 MAX_VALUES = {
     "munro": 5,
@@ -126,9 +117,9 @@ def filter_walks(df: pd.DataFrame) -> pd.DataFrame:
 
 def get_filters() -> None:
 
-    st.subheader("Walk Filters")
+    st.sidebar.subheader("Walk Filters")
     
-    st.slider("Munros Climbed",
+    st.sidebar.slider("Munros Climbed",
                       min_value=0,
                       max_value=MAX_VALUES["munro"],
                       value=(0, MAX_VALUES["munro"]),
@@ -158,14 +149,14 @@ def get_filters() -> None:
                       step=5,
                       key="vote_slider")
 
-    st.slider("Time (avg hours)",
+    st.sidebar.slider("Time (avg hours)",
                       min_value=0.,
                       max_value=MAX_VALUES["time"],
                       value=(0., MAX_VALUES["time"]),
                       step=0.5,
                       key="time_slider")
 
-    st.slider("Distance (km)",
+    st.sidebar.slider("Distance (km)",
                     min_value=0.,
                     max_value=MAX_VALUES["distance"],
                     value=(0., MAX_VALUES["distance"]),
@@ -173,11 +164,11 @@ def get_filters() -> None:
                     key="distance_slider")
     
     # Checkbox filters
-    st.subheader("Summit Filters")
-    st.checkbox("Corbett", key="corbett_check")
-    st.checkbox("Fiona", key="fiona_check")
-    st.checkbox("Donald", key="donald_check")
-    st.checkbox("Sub 2000",key="sub_2000_check")
+    st.sidebar.subheader("Summit Filters")
+    st.sidebar.checkbox("Corbett", key="corbett_check")
+    st.sidebar.checkbox("Fiona", key="fiona_check")
+    st.sidebar.checkbox("Donald", key="donald_check")
+    st.sidebar.checkbox("Sub 2000",key="sub_2000_check")
 
 
 if __name__ == "__main__":
@@ -186,15 +177,17 @@ if __name__ == "__main__":
     st.markdown(
         """
         Search for stunning walks in Scotland!\n 
-        Use the map to search for walks and use the filters to narrow your search. Walks can also be viewed and sorted in the table below the map.\n
+        Use the map to search for walks and use the filters to narrow your search. Walks can also be viewed and sorted in the table below the map.
+        For mobile users, click the top left arrow to view walk filters.\n
         The walk information provided comes from the wonderful [walkhighlands.co.uk](https://www.walkhighlands.co.uk).
         """
     )
     st.markdown("##### View GPS paths")
-    st.markdown(f"The below checkbox enables walking routes to be visualised when a walk is clicked, but may reduce app performance when there are a large number of walks on the map (automatically turned on for less than {auto_include_routes} walks).")
+    st.markdown(f"The 'View routes' checkbox enables walking routes to be visualised when a walk is clicked, but may reduce app performance when there are a large number of walks on the map (automatically turned on for less than {auto_include_routes} walks).")
     
+    st.sidebar.subheader("GPS paths")
     include_routes = "routes_check" in st.session_state and "num_walks" in st.session_state and st.session_state["num_walks"] < auto_include_routes
-    st.checkbox("View routes", key="routes_check", value=include_routes)
+    st.sidebar.checkbox("View routes", key="routes_check", value=include_routes)
     
     df = load_data(include_routes=st.session_state["routes_check"])
 
@@ -204,50 +197,47 @@ if __name__ == "__main__":
     if "zoom" not in st.session_state or st.session_state.region_selector.lower() == "all":
         st.session_state["zoom"] = zoom_start
 
-    col1, col2 = st.columns([0.25, 0.75])
 
-    with col1:
-        get_filters()
-    
-    with col2:
-        df = filter_walks(df)
+    get_filters()
 
-        m = folium.Map(center=center_start)
-        fg = folium.FeatureGroup(name="walks")
+    df = filter_walks(df)
 
-        if "marker_cluster" not in st.session_state or set(df.index) != set(st.session_state["displayed_walks"]) or st.session_state["routes_displayed"] != st.session_state["routes_check"]:
-            
-            if st.session_state["routes_check"]:
-            
-                marker_cluster = fg.add_child(FastMarkerCluster(df[["lat", "lon", "Popup", "path"]].values.tolist(), callback=marker_route_callback))
-            else:
-                marker_cluster = fg.add_child(FastMarkerCluster(df[["lat", "lon", "Popup"]].values.tolist(), callback=marker_callback))
+    m = folium.Map(center=center_start)
+    fg = folium.FeatureGroup(name="walks")
 
-            st.session_state["routes_displayed"] = st.session_state["routes_check"]
-            st.session_state["displayed_walks"] = df.index
-            st.session_state["marker_cluster"] = fg
-            st.session_state["center"] = (df["lat"].mean(), df["lon"].mean())
-            st.session_state["num_walks"] = df.shape[0]
+    if "marker_cluster" not in st.session_state or set(df.index) != set(st.session_state["displayed_walks"]) or st.session_state["routes_displayed"] != st.session_state["routes_check"]:
+        
+        if st.session_state["routes_check"]:
+        
+            marker_cluster = fg.add_child(FastMarkerCluster(df[["lat", "lon", "Popup", "path"]].values.tolist(), callback=marker_route_callback))
+        else:
+            marker_cluster = fg.add_child(FastMarkerCluster(df[["lat", "lon", "Popup"]].values.tolist(), callback=marker_callback))
 
-        if not df.shape[0]:
-            # TODO: No walks found! Reset filters? [reset button]
-            st.markdown("##### No walks found!")
-            st.session_state["center"] = center_start
-            st.session_state["zoom"] = zoom_start
-            st.session_state["num_walks"] = 0
+        st.session_state["routes_displayed"] = st.session_state["routes_check"]
+        st.session_state["displayed_walks"] = df.index
+        st.session_state["marker_cluster"] = fg
+        st.session_state["center"] = (df["lat"].mean(), df["lon"].mean())
+        st.session_state["num_walks"] = df.shape[0]
 
-        df = df[["Name", "Region", "Distance", "Ascent", "Time", "Start Grid Ref", "Rating", "Votes", "Grade", "Bog", "Munros Climbed", "Munro", "Corbett", "Fiona", "Donald", "Sub 2000"]]
-        df = df.rename(columns={"Distance": "Distance (km)", "Ascent": "Ascent (m)", "Time": "Time (avg hrs)"})
+    if not df.shape[0]:
+        # TODO: No walks found! Reset filters? [reset button]
+        st.markdown("##### No walks found!")
+        st.session_state["center"] = center_start
+        st.session_state["zoom"] = zoom_start
+        st.session_state["num_walks"] = 0
 
-        # Display
-        st_folium(
-            m, 
-            feature_group_to_add=st.session_state["marker_cluster"], 
-            center=st.session_state["center"], 
-            zoom=st.session_state["zoom"], 
-            width=map_width,
-            height=map_height
-        )
+    df = df[["Name", "Region", "Distance", "Ascent", "Time", "Start Grid Ref", "Rating", "Votes", "Grade", "Bog", "Munros Climbed", "Munro", "Corbett", "Fiona", "Donald", "Sub 2000"]]
+    df = df.rename(columns={"Distance": "Distance (km)", "Ascent": "Ascent (m)", "Time": "Time (avg hrs)"})
 
-        st.markdown(f"Total Walks: {df.shape[0]}")
-        st.dataframe(df.reset_index(drop=True))
+    # Display
+    st_folium(
+        m, 
+        feature_group_to_add=st.session_state["marker_cluster"], 
+        center=st.session_state["center"], 
+        zoom=st.session_state["zoom"], 
+        width=map_width,
+        height=map_height
+    )
+
+    st.markdown(f"Total Walks: {df.shape[0]}")
+    st.dataframe(df.reset_index(drop=True))
