@@ -6,7 +6,7 @@ from streamlit_folium import st_folium
 from utils.streamlit import DirectionalSlider
 from config import settings
 
-map_width, map_height = 700, 700
+map_width, map_height = 700, 600
 zoom_start = 6.25
 center_start = (56.5, 355.5)
 auto_include_routes = 500
@@ -177,8 +177,8 @@ if __name__ == "__main__":
     st.markdown(
         """
         Search for stunning walks in Scotland!\n 
-        Use the map to search for walks and use the filters to narrow your search. Walks can also be viewed and sorted in the table below the map.
-        For mobile users, click the top left arrow to view walk filters.\n
+        Use the map to search for walks and use the filters to narrow your search. Walks can also be viewed and sorted in the table below the map.\n
+        **For mobile users:** click the top left arrow to view walk filters.\n
         The walk information provided comes from the wonderful [walkhighlands.co.uk](https://www.walkhighlands.co.uk).
         """
     )
