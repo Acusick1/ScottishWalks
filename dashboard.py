@@ -88,6 +88,17 @@ def load_data(include_routes: bool = False) -> tuple[pd.DataFrame, pd.DataFrame]
         return pd.read_parquet(settings.processed_path, engine="fastparquet")
 
 
+@st.cache_resource
+def add_walks_to_map(df, include_routes: bool = False):
+
+    fg = folium.FeatureGroup(name="walks")
+
+    if include_routes:
+        return fg.add_child(FastMarkerCluster(df[["lat", "lon", "Popup", "path"]].values.tolist(), callback=marker_route_callback))
+    else:
+        return fg.add_child(FastMarkerCluster(df[["lat", "lon", "Popup"]].values.tolist(), callback=marker_callback))
+
+
 def filter_walks(df: pd.DataFrame) -> pd.DataFrame:
 
     filters = [
@@ -186,7 +197,7 @@ if __name__ == "__main__":
     st.markdown(f"The 'View routes' checkbox enables walking routes to be visualised when a walk is clicked, but may reduce app performance when there are a large number of walks on the map (automatically turned on for less than {auto_include_routes} walks).")
     
     st.sidebar.subheader("GPS paths")
-    include_routes = "routes_check" in st.session_state and "num_walks" in st.session_state and st.session_state["num_walks"] < auto_include_routes
+    include_routes = "routes_check" in st.session_state and st.session_state["num_walks"] < auto_include_routes
     st.sidebar.checkbox("View routes", key="routes_check", value=include_routes)
     
     df = load_data(include_routes=st.session_state["routes_check"])
@@ -197,29 +208,16 @@ if __name__ == "__main__":
     if "zoom" not in st.session_state or st.session_state.region_selector.lower() == "all":
         st.session_state["zoom"] = zoom_start
 
-
     get_filters()
-
     df = filter_walks(df)
 
     m = folium.Map(center=center_start)
-    fg = folium.FeatureGroup(name="walks")
+    st.session_state["marker_cluster"] = add_walks_to_map(df, include_routes=st.session_state["routes_check"])
 
-    if "marker_cluster" not in st.session_state or set(df.index) != set(st.session_state["displayed_walks"]) or st.session_state["routes_displayed"] != st.session_state["routes_check"]:
-        
-        if st.session_state["routes_check"]:
-        
-            marker_cluster = fg.add_child(FastMarkerCluster(df[["lat", "lon", "Popup", "path"]].values.tolist(), callback=marker_route_callback))
-        else:
-            marker_cluster = fg.add_child(FastMarkerCluster(df[["lat", "lon", "Popup"]].values.tolist(), callback=marker_callback))
-
-        st.session_state["routes_displayed"] = st.session_state["routes_check"]
-        st.session_state["displayed_walks"] = df.index
-        st.session_state["marker_cluster"] = fg
+    if df.shape[0]:
         st.session_state["center"] = (df["lat"].mean(), df["lon"].mean())
         st.session_state["num_walks"] = df.shape[0]
-
-    if not df.shape[0]:
+    else:
         # TODO: No walks found! Reset filters? [reset button]
         st.markdown("##### No walks found!")
         st.session_state["center"] = center_start
